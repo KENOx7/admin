@@ -122,7 +122,14 @@
         const modalButtons = document.getElementById('modal-buttons');
 
         // Uşaqlar və Fənlər
-        const students = Array.from({ length: 26 }, (_, i) => `Uşaq ${i + 1}`);
+        const students = [
+          "Ayan Məmmədova",
+          "Elvin Vəliyev",
+          "Nərgiz Həsənli",
+          "Tural Quliyev",
+          "Zəhra İsmayılova"
+          // Bura istədiyiniz qədər uşağın adını və soyadını dırnaq içində, vergüllə ayıraraq əlavə edə bilərsiniz.
+        ];
         const subjects = ["Azərbaycan dili", "Riyaziyyat", "İngilis dili", "Həyat bilgisi", "Musiqi", "Təsviri İncəsənət"];
 
         const studentSelect = document.getElementById('student-select');
