@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Paneli - Davamiyyət</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <!-- Login Ekranı -->
+    <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gray-900">
+        <div class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-sm text-center">
+            <h2 class="text-2xl font-bold mb-6">Admin Girişi</h2>
+            <input type="password" id="password" class="w-full px-4 py-2 border border-gray-300 rounded-md mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Şifrəni daxil edin">
+            <button id="login-button" class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition duration-300">Daxil Ol</button>
+            <p id="login-error" class="text-red-500 mt-4 text-sm hidden">Yanlış şifrə!</p>
+        </div>
+    </div>
+
+    <!-- Əsas Panel (Girişdən sonra görünür) -->
+    <div id="admin-panel" class="container mx-auto p-6 hidden">
+        <div class="bg-white p-8 rounded-xl shadow-lg">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl font-bold text-gray-800">Qayıb Əlavə Etmə Paneli</h1>
+                <button id="logout-button" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition">Çıxış</button>
+            </div>
+            
+
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- Qayıb əlavə etmə formu -->
+                <div class="bg-gray-50 p-6 rounded-lg border">
+                    <h2 class="text-xl font-semibold mb-4">Yeni Qayıb</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="student-select" class="block text-sm font-medium text-gray-700">Uşaq seçin:</label>
+                            <select id="student-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                <!-- Uşaqların siyahısı JS ilə əlavə olunacaq -->
+                            </select>
+                        </div>
+                        <div>
+                            <label for="subject-select" class="block text-sm font-medium text-gray-700">Fənn seçin:</label>
+                            <select id="subject-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                <!-- Fənlərin siyahısı JS ilə əlavə olunacaq -->
+                            </select>
+                        </div>
+                        <div>
+                            <label for="date-input" class="block text-sm font-medium text-gray-700">Tarix:</label>
+                            <input type="date" id="date-input" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        </div>
+                        <button id="add-absence-button" class="w-full bg-indigo-600 text-white py-2.5 rounded-lg hover:bg-indigo-700 transition font-semibold">
+                            Qayıbı Yadda Saxla
+                        </button>
+                        <p id="success-message" class="text-green-600 mt-2 text-center font-medium hidden">Qayıb uğurla əlavə edildi!</p>
+                    </div>
+                </div>
+
+                <!-- Son qayıblar siyahısı -->
+                <div class="bg-gray-50 p-6 rounded-lg border">
+                    <h2 class="text-xl font-semibold mb-4">Son Əlavə Edilən Qayıblar</h2>
+                    <div id="absences-list" class="space-y-3 max-h-96 overflow-y-auto pr-2">
+                        <!-- Qayıblar bura yüklənəcək -->
+                        <p class="text-gray-500">Heç bir qayıb qeyd edilməyib.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Firebase SDK'larını import et
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        
+        // --- BU HİSSƏNİ ÖZ FIREBASE PROYEKTİNİZİN MƏLUMATLARI İLƏ DƏYİŞİN ---
+        const firebaseConfig = {
+            apiKey: "SİZİN_API_KEY",
+            authDomain: "SİZİN_AUTH_DOMAIN",
+            projectId: "SİZİN_PROJECT_ID",
+            storageBucket: "SİZİN_STORAGE_BUCKET",
+            messagingSenderId: "SİZİN_MESSAGING_SENDER_ID",
+            appId: "SİZİN_APP_ID"
+        };
+        // -------------------------------------------------------------------------
+
+        // Tətbiqi başladın
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // Admin şifrəsi (Bunu daha təhlükəsiz bir şifrə ilə dəyişin)
+        const ADMIN_PASSWORD = "admin123";
+
+        const loginScreen = document.getElementById('login-screen');
+        const adminPanel = document.getElementById('admin-panel');
+        const loginButton = document.getElementById('login-button');
+        const logoutButton = document.getElementById('logout-button');
+        const passwordInput = document.getElementById('password');
+        const loginError = document.getElementById('login-error');
+
+        // Uşaqlar və Fənlər
+        const students = Array.from({ length: 26 }, (_, i) => `Uşaq ${i + 1}`);
+        const subjects = ["Azərbaycan dili", "Riyaziyyat", "İngilis dili", "Həyat bilgisi", "Musiqi", "Təsviri İncəsənət"];
+
+        // Select elementlərini doldurmaq
+        const studentSelect = document.getElementById('student-select');
+        const subjectSelect = document.getElementById('subject-select');
+        students.forEach(student => {
+            const option = document.createElement('option');
+            option.value = student;
+            option.textContent = student;
+            studentSelect.appendChild(option);
+        });
+        subjects.forEach(subject => {
+            const option = document.createElement('option');
+            option.value = subject;
+            option.textContent = subject;
+            subjectSelect.appendChild(option);
+        });
+
+        // Tarix inputuna bugünkü tarixi təyin et
+        document.getElementById('date-input').valueAsDate = new Date();
+
+        // Giriş yoxlaması
+        function checkLogin() {
+            if (sessionStorage.getItem('isAdminAuthenticated') === 'true') {
+                loginScreen.classList.add('hidden');
+                adminPanel.classList.remove('hidden');
+                signInToFirebase();
+            }
+        }
+
+        loginButton.addEventListener('click', () => {
+            if (passwordInput.value === ADMIN_PASSWORD) {
+                sessionStorage.setItem('isAdminAuthenticated', 'true');
+                checkLogin();
+                loginError.classList.add('hidden');
+            } else {
+                loginError.classList.remove('hidden');
+            }
+        });
+        
+        logoutButton.addEventListener('click', () => {
+            sessionStorage.removeItem('isAdminAuthenticated');
+            loginScreen.classList.remove('hidden');
+            adminPanel.classList.add('hidden');
+        });
+
+        // Firebase'ə anonim giriş
+        async function signInToFirebase() {
+             try {
+                await signInAnonymously(auth);
+            } catch (error) {
+                console.error("Firebase anonim giriş xətası:", error);
+            }
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // İstifadəçi daxil olduqda qayıbları yüklə
+                loadAbsences();
+            }
+        });
+
+
+        // Qayıb əlavə etmə
+        const addAbsenceButton = document.getElementById('add-absence-button');
+        const successMessage = document.getElementById('success-message');
+
+        addAbsenceButton.addEventListener('click', async () => {
+            const student = studentSelect.value;
+            const subject = subjectSelect.value;
+            const date = document.getElementById('date-input').value;
+
+            if (!student || !subject || !date) {
+                alert("Zəhmət olmasa bütün xanaları doldurun.");
+                return;
+            }
+
+            try {
+                await addDoc(collection(db, "qayiblar"), {
+                    usaqAdi: student,
+                    fenn: subject,
+                    tarix: date,
+                    timestamp: serverTimestamp()
+                });
+
+                successMessage.classList.remove('hidden');
+                setTimeout(() => {
+                    successMessage.classList.add('hidden');
+                }, 3000);
+
+            } catch (e) {
+                console.error("Sənəd əlavə edilərkən xəta: ", e);
+                alert("Qayıb əlavə edilərkən xəta baş verdi. Konsola baxın.");
+            }
+        });
+
+        // Qayıbları yükləmək və göstərmək
+        const absencesList = document.getElementById('absences-list');
+        function loadAbsences() {
+            const q = query(collection(db, "qayiblar"), orderBy("timestamp", "desc"));
+            onSnapshot(q, (querySnapshot) => {
+                absencesList.innerHTML = '';
+                if (querySnapshot.empty) {
+                    absencesList.innerHTML = '<p class="text-gray-500">Heç bir qayıb qeyd edilməyib.</p>';
+                    return;
+                }
+                querySnapshot.forEach((doc) => {
+                    const absence = doc.data();
+                    const absenceElement = document.createElement('div');
+                    absenceElement.className = 'flex justify-between items-center bg-white p-3 rounded-md shadow-sm';
+                    absenceElement.innerHTML = `
+                        <div>
+                            <p class="font-semibold">${absence.usaqAdi}</p>
+                            <p class="text-sm text-gray-600">${absence.fenn} - ${absence.tarix}</p>
+                        </div>
+                        <button data-id="${doc.id}" class="delete-btn text-red-500 hover:text-red-700">&times;</button>
+                    `;
+                    absencesList.appendChild(absenceElement);
+                });
+
+                 // Silmə düymələrinə event listener əlavə et
+                document.querySelectorAll('.delete-btn').forEach(button => {
+                    button.addEventListener('click', async (e) => {
+                        const docId = e.target.getAttribute('data-id');
+                        if (confirm("Bu qayıbı silmək istədiyinizə əminsiniz?")) {
+                            try {
+                                await deleteDoc(doc(db, "qayiblar", docId));
+                            } catch (error) {
+                                console.error("Silmə zamanı xəta:", error);
+                            }
+                        }
+                    });
+                });
+            });
+        }
+        
+        // Səhifə yüklənəndə girişi yoxla
+        checkLogin();
+    </script>
+</body>
+</html>
