@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
+        .modal { transition: opacity 0.3s ease; }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -30,7 +31,6 @@
                 <button id="logout-button" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition">Çıxış</button>
             </div>
             
-
             <div class="grid md:grid-cols-2 gap-6">
                 <!-- Qayıb əlavə etmə formu -->
                 <div class="bg-gray-50 p-6 rounded-lg border">
@@ -71,22 +71,35 @@
         </div>
     </div>
 
+    <!-- Xüsusi Modal Pəncərəsi -->
+    <div id="custom-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50 modal">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-sm text-center p-6 transform transition-all">
+            <h3 id="modal-text" class="text-lg font-medium mb-6">Modal mətni buraya gələcək</h3>
+            <div id="modal-buttons" class="flex justify-center gap-4">
+                <!-- Düymələr dinamik olaraq əlavə olunacaq -->
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         // Firebase SDK'larını import et
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         
-        // --- BU HİSSƏNİ ÖZ FIREBASE PROYEKTİNİZİN MƏLUMATLARI İLƏ DƏYİŞİN ---
+        // =======================================================================
+        // SİZİN TƏQDİM ETDİYİNİZ FIREBASE MƏLUMATLARI
+        // =======================================================================
         const firebaseConfig = {
-            apiKey: "SİZİN_API_KEY",
-            authDomain: "SİZİN_AUTH_DOMAIN",
-            projectId: "SİZİN_PROJECT_ID",
-            storageBucket: "SİZİN_STORAGE_BUCKET",
-            messagingSenderId: "SİZİN_MESSAGING_SENDER_ID",
-            appId: "SİZİN_APP_ID"
+            apiKey: "AIzaSyAtQ_laoPhn_31RgUFp5hkHPzAcYJSH9_8",
+            authDomain: "davamiyyet-sistemi.firebaseapp.com",
+            projectId: "davamiyyet-sistemi",
+            storageBucket: "davamiyyet-sistemi.appspot.com",
+            messagingSenderId: "773549402059",
+            appId: "1:773549402059:web:25286906aa1d998041f84e",
+            measurementId: "G-M3Y8QZCM8C"
         };
-        // -------------------------------------------------------------------------
+        // =======================================================================
 
         // Tətbiqi başladın
         const app = initializeApp(firebaseConfig);
@@ -103,11 +116,15 @@
         const passwordInput = document.getElementById('password');
         const loginError = document.getElementById('login-error');
 
+        // Modal elementləri
+        const customModal = document.getElementById('custom-modal');
+        const modalText = document.getElementById('modal-text');
+        const modalButtons = document.getElementById('modal-buttons');
+
         // Uşaqlar və Fənlər
         const students = Array.from({ length: 26 }, (_, i) => `Uşaq ${i + 1}`);
         const subjects = ["Azərbaycan dili", "Riyaziyyat", "İngilis dili", "Həyat bilgisi", "Musiqi", "Təsviri İncəsənət"];
 
-        // Select elementlərini doldurmaq
         const studentSelect = document.getElementById('student-select');
         const subjectSelect = document.getElementById('subject-select');
         students.forEach(student => {
@@ -123,10 +140,8 @@
             subjectSelect.appendChild(option);
         });
 
-        // Tarix inputuna bugünkü tarixi təyin et
         document.getElementById('date-input').valueAsDate = new Date();
 
-        // Giriş yoxlaması
         function checkLogin() {
             if (sessionStorage.getItem('isAdminAuthenticated') === 'true') {
                 loginScreen.classList.add('hidden');
@@ -151,7 +166,6 @@
             adminPanel.classList.add('hidden');
         });
 
-        // Firebase'ə anonim giriş
         async function signInToFirebase() {
              try {
                 await signInAnonymously(auth);
@@ -162,13 +176,10 @@
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // İstifadəçi daxil olduqda qayıbları yüklə
                 loadAbsences();
             }
         });
 
-
-        // Qayıb əlavə etmə
         const addAbsenceButton = document.getElementById('add-absence-button');
         const successMessage = document.getElementById('success-message');
 
@@ -178,7 +189,7 @@
             const date = document.getElementById('date-input').value;
 
             if (!student || !subject || !date) {
-                alert("Zəhmət olmasa bütün xanaları doldurun.");
+                showModal("Zəhmət olmasa bütün xanaları doldurun.", [{ text: "Bağla", class: "bg-gray-500", onClick: hideModal }]);
                 return;
             }
 
@@ -197,11 +208,10 @@
 
             } catch (e) {
                 console.error("Sənəd əlavə edilərkən xəta: ", e);
-                alert("Qayıb əlavə edilərkən xəta baş verdi. Konsola baxın.");
+                showModal("Qayıb əlavə edilərkən xəta baş verdi. Konsola baxın.", [{ text: "Bağla", class: "bg-red-500", onClick: hideModal }]);
             }
         });
 
-        // Qayıbları yükləmək və göstərmək
         const absencesList = document.getElementById('absences-list');
         function loadAbsences() {
             const q = query(collection(db, "qayiblar"), orderBy("timestamp", "desc"));
@@ -220,29 +230,54 @@
                             <p class="font-semibold">${absence.usaqAdi}</p>
                             <p class="text-sm text-gray-600">${absence.fenn} - ${absence.tarix}</p>
                         </div>
-                        <button data-id="${doc.id}" class="delete-btn text-red-500 hover:text-red-700">&times;</button>
+                        <button data-id="${doc.id}" class="delete-btn text-red-500 hover:text-red-700 text-2xl leading-none">&times;</button>
                     `;
                     absencesList.appendChild(absenceElement);
                 });
 
-                 // Silmə düymələrinə event listener əlavə et
                 document.querySelectorAll('.delete-btn').forEach(button => {
-                    button.addEventListener('click', async (e) => {
-                        const docId = e.target.getAttribute('data-id');
-                        if (confirm("Bu qayıbı silmək istədiyinizə əminsiniz?")) {
-                            try {
-                                await deleteDoc(doc(db, "qayiblar", docId));
-                            } catch (error) {
-                                console.error("Silmə zamanı xəta:", error);
-                            }
-                        }
+                    button.addEventListener('click', (e) => {
+                        const docId = e.target.closest('button').getAttribute('data-id');
+                        showModal("Bu qayıbı silmək istədiyinizə əminsiniz?", [
+                            { 
+                                text: "Bəli, sil", 
+                                class: "bg-red-600 hover:bg-red-700", 
+                                onClick: async () => {
+                                    try {
+                                        await deleteDoc(doc(db, "qayiblar", docId));
+                                        hideModal();
+                                    } catch (error) {
+                                        console.error("Silmə zamanı xəta:", error);
+                                        hideModal();
+                                    }
+                                }
+                            },
+                            { text: "Ləğv et", class: "bg-gray-500 hover:bg-gray-600", onClick: hideModal }
+                        ]);
                     });
                 });
             });
         }
         
-        // Səhifə yüklənəndə girişi yoxla
+        function showModal(text, buttons) {
+            modalText.textContent = text;
+            modalButtons.innerHTML = '';
+            buttons.forEach(btnInfo => {
+                const button = document.createElement('button');
+                button.textContent = btnInfo.text;
+                button.className = `text-white px-6 py-2 rounded-md transition ${btnInfo.class}`;
+                button.onclick = btnInfo.onClick;
+                modalButtons.appendChild(button);
+            });
+            customModal.classList.remove('hidden');
+        }
+
+        function hideModal() {
+            customModal.classList.add('hidden');
+        }
+
         checkLogin();
     </script>
 </body>
 </html>
+
