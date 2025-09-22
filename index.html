@@ -1,311 +1,249 @@
 <!DOCTYPE html>
 <html lang="az">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Paneli - Davamiyyət</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-        .modal { transition: opacity 0.3s ease; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Paneli - Davamiyyət</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .modal { transition: opacity 0.3s ease; }
+  </style>
 </head>
-<body class="bg-gray-100 text-gray-800">
+<body class="container mx-auto p-4 sm:p-6 lg:p-8 bg-gray-100 text-gray-800">
 
-    <!-- Login Ekranı -->
-    <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gray-900">
-        <div class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-sm text-center">
-            <h2 class="text-2xl font-bold mb-6">Admin Girişi</h2>
-            <input type="password" id="password" class="w-full px-4 py-2 border border-gray-300 rounded-md mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Şifrəni daxil edin">
-            <button id="login-button" class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition duration-300">Daxil Ol</button>
-            <p id="login-error" class="text-red-500 mt-4 text-sm hidden">Yanlış şifrə!</p>
-        </div>
+  <!-- Header -->
+  <header class="bg-gray-800 border-b-4 border-blue-500 text-white font-bold p-4 text-2xl text-center shadow-lg mb-6">
+    758/ITS
+    <div class="mt-2">
+      <button 
+        onclick="window.location.href='https://kenox7.github.io/Cedvel/'" 
+        class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-1.5 px-4 rounded-full transition-transform transform hover:scale-105 shadow-md">
+        Geri
+      </button>
     </div>
+  </header>
 
-    <!-- Əsas Panel (Girişdən sonra görünür) -->
-    <div id="admin-panel" class="container mx-auto p-6 hidden">
-        <div class="bg-white p-8 rounded-xl shadow-lg">
-            <div class="flex justify-between items-center mb-6">
-                <h1 class="text-3xl font-bold text-gray-800">Qayıb Əlavə Etmə Paneli</h1>
-                <button id="logout-button" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition">Çıxış</button>
-            </div>
-            
-            <div class="grid md:grid-cols-2 gap-6">
-                <!-- Qayıb əlavə etmə formu -->
-                <div class="bg-gray-50 p-6 rounded-lg border">
-                    <h2 class="text-xl font-semibold mb-4">Yeni Qayıb</h2>
-                    <div class="space-y-4">
-                        <div>
-                            <label for="student-select" class="block text-sm font-medium text-gray-700">Uşaq seçin:</label>
-                            <select id="student-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
-                                <!-- Uşaqların siyahısı JS ilə əlavə olunacaq -->
-                            </select>
-                        </div>
-                        <div>
-                            <label for="subject-select" class="block text-sm font-medium text-gray-700">Fənn seçin:</label>
-                            <select id="subject-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
-                                <!-- Fənlərin siyahısı JS ilə əlavə olunacaq -->
-                            </select>
-                        </div>
-                        <div>
-                            <label for="date-input" class="block text-sm font-medium text-gray-700">Tarix:</label>
-                            <input type="date" id="date-input" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                        </div>
-                        <button id="add-absence-button" class="w-full bg-indigo-600 text-white py-2.5 rounded-lg hover:bg-indigo-700 transition font-semibold">
-                            Qayıbı Yadda Saxla
-                        </button>
-                        <p id="success-message" class="text-green-600 mt-2 text-center font-medium hidden">Qayıb uğurla əlavə edildi!</p>
-                    </div>
-                </div>
-
-                <!-- Son qayıblar siyahısı -->
-                <div class="bg-gray-50 p-6 rounded-lg border">
-                    <h2 class="text-xl font-semibold mb-4">Son Əlavə Edilən Qayıblar</h2>
-                    <div id="absences-list" class="space-y-3 max-h-96 overflow-y-auto pr-2">
-                        <!-- Qayıblar bura yüklənəcək -->
-                        <p class="text-gray-500">Heç bir qayıb qeyd edilməyib.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+  <!-- Login ekranı -->
+  <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gray-900">
+    <div class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-sm text-center">
+      <h2 class="text-2xl font-bold mb-6">Admin Girişi</h2>
+      <input type="password" id="password" class="w-full px-4 py-2 border border-gray-300 rounded-md mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Şifrəni daxil edin">
+      <button id="login-button" class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition duration-300">Daxil Ol</button>
+      <p id="login-error" class="text-red-500 mt-4 text-sm hidden">Yanlış şifrə!</p>
     </div>
+  </div>
 
-    <!-- Xüsusi Modal Pəncərəsi -->
-    <div id="custom-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50 modal">
-        <div class="bg-white rounded-lg shadow-2xl w-full max-w-sm text-center p-6 transform transition-all">
-            <h3 id="modal-text" class="text-lg font-medium mb-6">Modal mətni buraya gələcək</h3>
-            <div id="modal-buttons" class="flex justify-center gap-4">
-                <!-- Düymələr dinamik olaraq əlavə olunacaq -->
+  <!-- Əsas panel -->
+  <div id="admin-panel" class="hidden">
+    <div class="bg-white p-8 rounded-xl shadow-lg">
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">Qayıb Əlavə Etmə Paneli</h1>
+        <button id="logout-button" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition">Çıxış</button>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-6">
+        <!-- Qayıb əlavə etmə formu -->
+        <div class="bg-gray-50 p-6 rounded-lg border">
+          <h2 class="text-xl font-semibold mb-4">Yeni Qayıb</h2>
+          <div class="space-y-4">
+            <div>
+              <label for="student-select" class="block text-sm font-medium text-gray-700">Uşaq seçin:</label>
+              <select id="student-select" class="mt-1 block w-full border rounded-md p-2"></select>
             </div>
+            <div>
+              <label for="subject-select" class="block text-sm font-medium text-gray-700">Fənn seçin:</label>
+              <select id="subject-select" class="mt-1 block w-full border rounded-md p-2"></select>
+            </div>
+            <div>
+              <label for="date-input" class="block text-sm font-medium text-gray-700">Tarix:</label>
+              <input type="date" id="date-input" class="mt-1 block w-full border rounded-md p-2">
+            </div>
+            <button id="add-absence-button" class="w-full bg-indigo-600 text-white py-2.5 rounded-lg hover:bg-indigo-700 transition font-semibold">
+              Qayıbı Yadda Saxla
+            </button>
+            <p id="success-message" class="text-green-600 mt-2 text-center font-medium hidden">Qayıb uğurla əlavə edildi!</p>
+          </div>
         </div>
+
+        <!-- Son qayıblar -->
+        <div class="bg-gray-50 p-6 rounded-lg border">
+          <h2 class="text-xl font-semibold mb-4">Son Əlavə Edilən Qayıblar</h2>
+          <div id="absences-list" class="space-y-3 max-h-96 overflow-y-auto pr-2">
+            <p class="text-gray-500">Heç bir qayıb qeyd edilməyib.</p>
+          </div>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <script type="module">
-        // Firebase SDK'larını import et
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        
-        // =======================================================================
-        // SİZİN TƏQDİM ETDİYİNİZ FIREBASE MƏLUMATLARI
-        // =======================================================================
-        const firebaseConfig = {
-            apiKey: "AIzaSyAtQ_laoPhn_31RgUFp5hkHPzAcYJSH9_8",
-            authDomain: "davamiyyet-sistemi.firebaseapp.com",
-            projectId: "davamiyyet-sistemi",
-            storageBucket: "davamiyyet-sistemi.appspot.com",
-            messagingSenderId: "773549402059",
-            appId: "1:773549402059:web:25286906aa1d998041f84e",
-            measurementId: "G-M3Y8QZCM8C"
-        };
-        // =======================================================================
+  <!-- Modal -->
+  <div id="custom-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50 modal">
+    <div class="bg-white rounded-lg shadow-2xl w-full max-w-sm text-center p-6 transform transition-all">
+      <h3 id="modal-text" class="text-lg font-medium mb-6">Modal mətni buraya gələcək</h3>
+      <div id="modal-buttons" class="flex justify-center gap-4"></div>
+    </div>
+  </div>
 
-        // Tətbiqi başladın
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
+  <!-- JS -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        // Admin şifrəsi (Bunu daha təhlükəsiz bir şifrə ilə dəyişin)
-        const ADMIN_PASSWORD = "admin123";
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyAtQ_laoPhn_31RgUFp5hkHPzAcYJSH9_8",
+      authDomain: "davamiyyet-sistemi.firebaseapp.com",
+      projectId: "davamiyyet-sistemi",
+      storageBucket: "davamiyyet-sistemi.appspot.com",
+      messagingSenderId: "773549402059",
+      appId: "1:773549402059:web:25286906aa1d998041f84e",
+      measurementId: "G-M3Y8QZCM8C"
+    };
 
-        const loginScreen = document.getElementById('login-screen');
-        const adminPanel = document.getElementById('admin-panel');
-        const loginButton = document.getElementById('login-button');
-        const logoutButton = document.getElementById('logout-button');
-        const passwordInput = document.getElementById('password');
-        const loginError = document.getElementById('login-error');
+    // App init
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
 
-        // Modal elementləri
-        const customModal = document.getElementById('custom-modal');
-        const modalText = document.getElementById('modal-text');
-        const modalButtons = document.getElementById('modal-buttons');
+    // Admin şifrəsi
+    const ADMIN_PASSWORD = "admin123";
 
-        // Uşaqlar və Fənlər
-        const students = [
-          "İsayev Ramal Rəfayıl",
-          "Qulamov Kamil Amil",
-          "Abbaszadə Salman Məsud",
-          "Heydərli Heydər Sabir",
-          "Mikayılova Lalə Samir",
-          "Seyidov Nurəli Mirnayıb",
-          "Kübərov Rahid Mahmud",
-          "Bayramov Məmməd Vaqif",
-          "Həsənov Mənzər İlqar",
-          "Rüstəmov Elgün Ceyhun",
-          "Xasayeva Nərmin Azər",
-          "İbalı Cəmilə Rəfail",
-          "Mirzəyeva Nüşabə Hacıəli",
-          "Muradova Leyla Qadir",
-          "Əhmədov Kənan Ceyhun",
-          "Sultanlı Nihad Sərhad",
-          "Əsgərov Elnar Vüsal",
-          "Hüseynli Nərgiz Mütəllim",
-          "Mirişov Nihad Murad",
-          "Ağalizadə Səid Elman",
-          "Hüseynova Firuzə Sənan",
-          "Ağakərimov Fəqan Alim",
-          "Həsənova Cəmalə Sergey",
-          "Əliyev Fuad Razim",
-          "Orucov Nurlan Seymur",
-          "Məhərrəmli Nicat Elxan"
-        ];
+    const loginScreen = document.getElementById('login-screen');
+    const adminPanel = document.getElementById('admin-panel');
+    const loginButton = document.getElementById('login-button');
+    const logoutButton = document.getElementById('logout-button');
+    const passwordInput = document.getElementById('password');
+    const loginError = document.getElementById('login-error');
 
-        const subjects = ["Ehtimal nəzəriyyəsi və statistika", "Sistem proqramlaşdırma", "XDIAK-3", "Verilənlər bazası sistemləri", "Kompüter arxitekturası-1", "Web sistemləri və texnologiyaları"];
+    const customModal = document.getElementById('custom-modal');
+    const modalText = document.getElementById('modal-text');
+    const modalButtons = document.getElementById('modal-buttons');
 
-        const studentSelect = document.getElementById('student-select');
-        const subjectSelect = document.getElementById('subject-select');
-        students.forEach(student => {
-            const option = document.createElement('option');
-            option.value = student;
-            option.textContent = student;
-            studentSelect.appendChild(option);
-        });
-        subjects.forEach(subject => {
-            const option = document.createElement('option');
-            option.value = subject;
-            option.textContent = subject;
-            subjectSelect.appendChild(option);
-        });
+    const students = [
+      "İsayev Ramal Rəfayıl","Qulamov Kamil Amil","Abbaszadə Salman Məsud",
+      "Heydərli Heydər Sabir","Mikayılova Lalə Samir","Seyidov Nurəli Mirnayıb",
+      "Kübərov Rahid Mahmud","Bayramov Məmməd Vaqif","Həsənov Mənzər İlqar",
+      "Rüstəmov Elgün Ceyhun","Xasayeva Nərmin Azər","İbalı Cəmilə Rəfail",
+      "Mirzəyeva Nüşabə Hacıəli","Muradova Leyla Qadir","Əhmədov Kənan Ceyhun",
+      "Sultanlı Nihad Sərhad","Əsgərov Elnar Vüsal","Hüseynli Nərgiz Mütəllim",
+      "Mirişov Nihad Murad","Ağalizadə Səid Elman","Hüseynova Firuzə Sənan",
+      "Ağakərimov Fəqan Alim","Həsənova Cəmalə Sergey","Əliyev Fuad Razim",
+      "Orucov Nurlan Seymur","Məhərrəmli Nicat Elxan"
+    ];
+    const subjects = ["Ehtimal nəzəriyyəsi və statistika", "Sistem proqramlaşdırma", "XDIAK-3", "Verilənlər bazası sistemləri", "Kompüter arxitekturası-1", "Web sistemləri və texnologiyaları"];
 
-        document.getElementById('date-input').valueAsDate = new Date();
+    const studentSelect = document.getElementById('student-select');
+    const subjectSelect = document.getElementById('subject-select');
+    students.forEach(s => { let o=document.createElement('option'); o.value=s; o.textContent=s; studentSelect.appendChild(o); });
+    subjects.forEach(s => { let o=document.createElement('option'); o.value=s; o.textContent=s; subjectSelect.appendChild(o); });
 
-        function checkLogin() {
-            if (sessionStorage.getItem('isAdminAuthenticated') === 'true') {
-                loginScreen.classList.add('hidden');
-                adminPanel.classList.remove('hidden');
-                signInToFirebase();
-            }
-        }
+    document.getElementById('date-input').valueAsDate = new Date();
 
-        loginButton.addEventListener('click', () => {
-            if (passwordInput.value === ADMIN_PASSWORD) {
-                sessionStorage.setItem('isAdminAuthenticated', 'true');
-                checkLogin();
-                loginError.classList.add('hidden');
-            } else {
-                loginError.classList.remove('hidden');
-            }
-        });
-        
-        logoutButton.addEventListener('click', () => {
-            sessionStorage.removeItem('isAdminAuthenticated');
-            loginScreen.classList.remove('hidden');
-            adminPanel.classList.add('hidden');
-        });
+    function checkLogin() {
+      if (sessionStorage.getItem('isAdminAuthenticated') === 'true') {
+        loginScreen.classList.add('hidden');
+        adminPanel.classList.remove('hidden');
+        signInToFirebase();
+      }
+    }
 
-        async function signInToFirebase() {
-             try {
-                await signInAnonymously(auth);
-            } catch (error) {
-                console.error("Firebase anonim giriş xətası:", error);
-            }
-        }
-
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                loadAbsences();
-            }
-        });
-
-        const addAbsenceButton = document.getElementById('add-absence-button');
-        const successMessage = document.getElementById('success-message');
-
-        addAbsenceButton.addEventListener('click', async () => {
-            const student = studentSelect.value;
-            const subject = subjectSelect.value;
-            const date = document.getElementById('date-input').value;
-
-            if (!student || !subject || !date) {
-                showModal("Zəhmət olmasa bütün xanaları doldurun.", [{ text: "Bağla", class: "bg-gray-500", onClick: hideModal }]);
-                return;
-            }
-
-            try {
-                await addDoc(collection(db, "qayiblar"), {
-                    usaqAdi: student,
-                    fenn: subject,
-                    tarix: date,
-                    timestamp: serverTimestamp()
-                });
-
-                successMessage.classList.remove('hidden');
-                setTimeout(() => {
-                    successMessage.classList.add('hidden');
-                }, 3000);
-
-            } catch (e) {
-                console.error("Sənəd əlavə edilərkən xəta: ", e);
-                showModal("Qayıb əlavə edilərkən xəta baş verdi. Konsola baxın.", [{ text: "Bağla", class: "bg-red-500", onClick: hideModal }]);
-            }
-        });
-
-        const absencesList = document.getElementById('absences-list');
-        function loadAbsences() {
-            const q = query(collection(db, "qayiblar"), orderBy("timestamp", "desc"));
-            onSnapshot(q, (querySnapshot) => {
-                absencesList.innerHTML = '';
-                if (querySnapshot.empty) {
-                    absencesList.innerHTML = '<p class="text-gray-500">Heç bir qayıb qeyd edilməyib.</p>';
-                    return;
-                }
-                querySnapshot.forEach((doc) => {
-                    const absence = doc.data();
-                    const absenceElement = document.createElement('div');
-                    absenceElement.className = 'flex justify-between items-center bg-white p-3 rounded-md shadow-sm';
-                    absenceElement.innerHTML = `
-                        <div>
-                            <p class="font-semibold">${absence.usaqAdi}</p>
-                            <p class="text-sm text-gray-600">${absence.fenn} - ${absence.tarix}</p>
-                        </div>
-                        <button data-id="${doc.id}" class="delete-btn text-red-500 hover:text-red-700 text-2xl leading-none">&times;</button>
-                    `;
-                    absencesList.appendChild(absenceElement);
-                });
-
-                document.querySelectorAll('.delete-btn').forEach(button => {
-                    button.addEventListener('click', (e) => {
-                        const docId = e.target.closest('button').getAttribute('data-id');
-                        showModal("Bu qayıbı silmək istədiyinizə əminsiniz?", [
-                            { 
-                                text: "Bəli, sil", 
-                                class: "bg-red-600 hover:bg-red-700", 
-                                onClick: async () => {
-                                    try {
-                                        await deleteDoc(doc(db, "qayiblar", docId));
-                                        hideModal();
-                                    } catch (error) {
-                                        console.error("Silmə zamanı xəta:", error);
-                                        hideModal();
-                                    }
-                                }
-                            },
-                            { text: "Ləğv et", class: "bg-gray-500 hover:bg-gray-600", onClick: hideModal }
-                        ]);
-                    });
-                });
-            });
-        }
-        
-        function showModal(text, buttons) {
-            modalText.textContent = text;
-            modalButtons.innerHTML = '';
-            buttons.forEach(btnInfo => {
-                const button = document.createElement('button');
-                button.textContent = btnInfo.text;
-                button.className = `text-white px-6 py-2 rounded-md transition ${btnInfo.class}`;
-                button.onclick = btnInfo.onClick;
-                modalButtons.appendChild(button);
-            });
-            customModal.classList.remove('hidden');
-        }
-
-        function hideModal() {
-            customModal.classList.add('hidden');
-        }
-
+    loginButton.addEventListener('click', () => {
+      if (passwordInput.value === ADMIN_PASSWORD) {
+        sessionStorage.setItem('isAdminAuthenticated', 'true');
         checkLogin();
-    </script>
+        loginError.classList.add('hidden');
+      } else {
+        loginError.classList.remove('hidden');
+      }
+    });
+
+    logoutButton.addEventListener('click', () => {
+      sessionStorage.removeItem('isAdminAuthenticated');
+      loginScreen.classList.remove('hidden');
+      adminPanel.classList.add('hidden');
+    });
+
+    async function signInToFirebase() {
+      try { await signInAnonymously(auth); }
+      catch (e) { console.error("Firebase anonim giriş xətası:", e); }
+    }
+
+    onAuthStateChanged(auth, (user) => { if (user) loadAbsences(); });
+
+    const addAbsenceButton = document.getElementById('add-absence-button');
+    const successMessage = document.getElementById('success-message');
+
+    addAbsenceButton.addEventListener('click', async () => {
+      const student = studentSelect.value;
+      const subject = subjectSelect.value;
+      const date = document.getElementById('date-input').value;
+      if (!student || !subject || !date) {
+        showModal("Zəhmət olmasa bütün xanaları doldurun.", [{ text: "Bağla", class: "bg-gray-500", onClick: hideModal }]);
+        return;
+      }
+      try {
+        await addDoc(collection(db, "qayiblar"), { usaqAdi: student, fenn: subject, tarix: date, timestamp: serverTimestamp() });
+        successMessage.classList.remove('hidden');
+        setTimeout(() => successMessage.classList.add('hidden'), 3000);
+      } catch (e) {
+        console.error("Əlavə etmə xətası: ", e);
+        showModal("Qayıb əlavə edilərkən xəta baş verdi.", [{ text: "Bağla", class: "bg-red-500", onClick: hideModal }]);
+      }
+    });
+
+    const absencesList = document.getElementById('absences-list');
+    function loadAbsences() {
+      const q = query(collection(db, "qayiblar"), orderBy("timestamp", "desc"));
+      onSnapshot(q, (querySnapshot) => {
+        absencesList.innerHTML = '';
+        if (querySnapshot.empty) {
+          absencesList.innerHTML = '<p class="text-gray-500">Heç bir qayıb qeyd edilməyib.</p>';
+          return;
+        }
+        querySnapshot.forEach((d) => {
+          const a = d.data();
+          const el = document.createElement('div');
+          el.className = 'flex justify-between items-center bg-white p-3 rounded-md shadow-sm';
+          el.innerHTML = `
+            <div>
+              <p class="font-semibold">${a.usaqAdi}</p>
+              <p class="text-sm text-gray-600">${a.fenn} - ${a.tarix}</p>
+            </div>
+            <button data-id="${d.id}" class="delete-btn text-red-500 hover:text-red-700 text-2xl leading-none">&times;</button>
+          `;
+          absencesList.appendChild(el);
+        });
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const id = e.target.closest('button').getAttribute('data-id');
+            showModal("Bu qayıbı silmək istədiyinizə əminsiniz?", [
+              { text: "Bəli, sil", class: "bg-red-600 hover:bg-red-700", onClick: async () => { await deleteDoc(doc(db, "qayiblar", id)); hideModal(); }},
+              { text: "Ləğv et", class: "bg-gray-500 hover:bg-gray-600", onClick: hideModal }
+            ]);
+          });
+        });
+      });
+    }
+
+    function showModal(text, buttons) {
+      modalText.textContent = text;
+      modalButtons.innerHTML = '';
+      buttons.forEach(b => {
+        const btn = document.createElement('button');
+        btn.textContent = b.text;
+        btn.className = `text-white px-6 py-2 rounded-md transition ${b.class}`;
+        btn.onclick = b.onClick;
+        modalButtons.appendChild(btn);
+      });
+      customModal.classList.remove('hidden');
+    }
+
+    function hideModal() { customModal.classList.add('hidden'); }
+
+    checkLogin();
+  </script>
 </body>
 </html>
-
