@@ -123,9 +123,12 @@
             subjectSelect.innerHTML += `<option value="${subject}">${subject}</option>`;
         });
 
-        const bakuDate = new Date(
-        new Date().toLocaleString("en-US", { timeZone: "Asia/Baku" }));
-        document.getElementById('date-input').valueAsDate = bakuDate;
+        const bakuDate = new Date().toLocaleString("en-US", { timeZone: "Asia/Baku" });
+        const baku = new Date(bakuDate);
+        const yyyy = baku.getFullYear();
+        const mm = String(baku.getMonth() + 1).padStart(2, "0");
+        const dd = String(baku.getDate()).padStart(2, "0");
+        document.getElementById("date-input").value = `${yyyy}-${mm}-${dd}`;
 
         function checkLogin() {
             if (sessionStorage.getItem('isAdminAuthenticated') === 'true') {
