@@ -123,7 +123,9 @@
             subjectSelect.innerHTML += `<option value="${subject}">${subject}</option>`;
         });
 
-        document.getElementById('date-input').valueAsDate = new Date();
+        const bakuDate = new Date(
+        new Date().toLocaleString("en-US", { timeZone: "Asia/Baku" }));
+        document.getElementById('date-input').valueAsDate = bakuDate;
 
         function checkLogin() {
             if (sessionStorage.getItem('isAdminAuthenticated') === 'true') {
