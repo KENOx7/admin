@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="az">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,84 +8,240 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: #111827;
+        body {
+            font-family: 'Inter', sans-serif;
         }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #111827; }
-        ::-webkit-scrollbar-thumb { background: #374151; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
-        ::selection { background-color: #3b82f6; color: white; }
-        input[type="date"]::-webkit-calendar-picker-indicator {
-            filter: invert(0.8);
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .tab-btn.active {
+            background-color: #2563eb;
+            color: white;
         }
     </style>
 </head>
-<body class="text-gray-200">
 
+<body class="bg-gray-900 text-gray-200 antialiased font-sans">
+
+    <!-- Login Screen -->
     <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gray-900 p-4">
         <div class="bg-gray-800 p-8 rounded-2xl shadow-2xl border border-gray-700 w-full max-w-sm text-center">
             <h2 class="text-3xl font-bold mb-6 text-gray-200">Admin Girişi</h2>
-            <input type="password" id="password" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-gray-200 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400" placeholder="Şifrəni daxil edin">
-            <button id="login-button" class="w-full bg-blue-600 text-white py-3 rounded-full hover:bg-blue-700 transition duration-300 font-semibold text-lg shadow-md hover:scale-105">Daxil Ol</button>
+            <input type="password" id="password"
+                class="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-gray-200 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+                placeholder="Şifrəni daxil edin">
+            <button id="login-button"
+                class="w-full bg-blue-600 text-white py-3 rounded-full hover:bg-blue-700 transition duration-300 font-semibold text-lg shadow-md hover:scale-105">Daxil
+                Ol</button>
             <p id="login-error" class="text-red-400 mt-4 text-sm hidden">Yanlış şifrə!</p>
         </div>
     </div>
 
+    <!-- Admin Panel -->
     <div id="admin-panel" class="container mx-auto p-4 sm:p-6 hidden">
-        <div class="bg-gray-800 p-6 sm:p-8 rounded-2xl shadow-2xl border border-gray-700">
-            <div class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
-                <h1 class="text-3xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">İdarəetmə Paneli</h1>
-                <button id="logout-button" class="bg-red-600 text-white px-6 py-2 rounded-full hover:bg-red-700 transition font-semibold shadow-md hover:scale-105">Çıxış</button>
-            </div>
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
+                İdarəetmə Paneli</h1>
+            <button id="logout-button"
+                class="bg-red-600 px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm text-white font-bold">Çıxış</button>
+        </div>
 
-            <div class="grid lg:grid-cols-2 gap-8">
+        <!-- Current Semester Info -->
+        <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 mb-6 flex justify-between items-center">
+            <div>
+                <p class="text-gray-400 text-sm">Aktiv Semestr</p>
+                <h2 id="active-semester-display" class="text-xl font-bold text-white">Yklənir...</h2>
+            </div>
+            <div class="text-right">
+                <p class="text-gray-400 text-sm">Qrup</p>
+                <h2 class="text-xl font-bold text-blue-400">758/ITS</h2>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex space-x-2 mb-6 overflow-x-auto pb-2">
+            <button
+                class="tab-btn active px-4 py-2 rounded-lg bg-gray-800 text-gray-400 hover:bg-gray-700 transition whitespace-nowrap"
+                data-tab="tab-absences">Qayıblar</button>
+            <button
+                class="tab-btn px-4 py-2 rounded-lg bg-gray-800 text-gray-400 hover:bg-gray-700 transition whitespace-nowrap"
+                data-tab="tab-schedule">Dərs Cədvəli</button>
+            <button
+                class="tab-btn px-4 py-2 rounded-lg bg-gray-800 text-gray-400 hover:bg-gray-700 transition whitespace-nowrap"
+                data-tab="tab-subjects">Fənlər</button>
+            <button
+                class="tab-btn px-4 py-2 rounded-lg bg-gray-800 text-gray-400 hover:bg-gray-700 transition whitespace-nowrap"
+                data-tab="tab-semester">Semestr</button>
+            <button
+                class="tab-btn px-4 py-2 rounded-lg bg-gray-800 text-gray-400 hover:bg-gray-700 transition whitespace-nowrap"
+                data-tab="tab-settings">Tənzimləmələr</button>
+        </div>
+
+        <!-- Tab Content: Absences -->
+        <div id="tab-absences" class="tab-content active space-y-6">
+            <div class="grid lg:grid-cols-2 gap-6">
                 <div class="bg-gray-900 p-6 rounded-xl border border-gray-700">
-                    <h2 class="text-2xl font-bold mb-5 text-gray-200">Yeni Qayıb Əlavə Et</h2>
-                    <div class="space-y-5">
-                        <div>
-                            <label for="student-select" class="block text-sm font-medium text-gray-400 mb-1">Tələbə seçin:</label>
-                            <select id="student-select" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
-                        </div>
-                        <div>
-                            <label for="subject-select" class="block text-sm font-medium text-gray-400 mb-1">Fənn seçin:</label>
-                            <select id="subject-select" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
-                        </div>
-                        <div>
-                            <label for="date-input" class="block text-sm font-medium text-gray-400 mb-1">Tarix:</label>
-                            <input type="date" id="date-input" class="w-full p-2.5 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        </div>
-                        <button id="add-absence-button" class="w-full bg-green-600 text-white py-3 rounded-full hover:bg-green-700 transition font-bold text-lg shadow-md hover:scale-105">
-                            Qayıbı Yadda Saxla
-                        </button>
-                        <p id="success-message" class="text-green-400 mt-2 text-center font-medium hidden">Qayıb uğurla əlavə edildi!</p>
+                    <h3 class="text-xl font-bold mb-4">Qayıb Əlavə Et</h3>
+                    <div class="space-y-4">
+                        <select id="student-select"
+                            class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white">
+                            <option value="">Tələbə Seçin...</option>
+                        </select>
+                        <select id="subject-select-absence"
+                            class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white">
+                            <option value="">Fənn Seçin...</option>
+                        </select>
+                        <input type="date" id="date-input"
+                            class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white">
+                        <button id="btn-add-absence"
+                            class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-bold transition">Yadda
+                            Saxla</button>
                     </div>
                 </div>
-
                 <div class="bg-gray-900 p-6 rounded-xl border border-gray-700">
-                    <h2 class="text-2xl font-bold mb-5 text-gray-200">Son Qayıblar</h2>
-                    <div id="absences-list" class="space-y-3 max-h-[50vh] overflow-y-auto pr-2">
-                        <p class="text-gray-500">Heç bir qayıb qeyd edilməyib.</p>
-                    </div>
+                    <h3 class="text-xl font-bold mb-4">Son Qayıblar</h3>
+                    <div id="absences-list" class="space-y-3 max-h-[400px] overflow-y-auto pr-2"></div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div id="custom-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-sm text-center p-8 transform transition-all">
-            <h3 id="modal-text" class="text-lg font-medium mb-6 text-gray-200">Modal mətni buraya gələcək</h3>
-            <div id="modal-buttons" class="flex justify-center gap-4">
+        <!-- Tab Content: Schedule -->
+        <div id="tab-schedule" class="tab-content space-y-6">
+            <div class="bg-gray-900 p-6 rounded-xl border border-gray-700">
+                <h3 class="text-xl font-bold mb-4">Cədvələ Dərs Əlavə Et</h3>
+                <div class="grid md:grid-cols-2 gap-4 mb-4">
+                    <select id="schedule-week-type"
+                        class="p-3 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                        <option value="both">Hər İkisi (ALT və ÜST)</option>
+                        <option value="alt">ALT Həftə</option>
+                        <option value="ust">ÜST Həftə</option>
+                    </select>
+                    <select id="schedule-day" class="p-3 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                        <option value="1">1. Bazar ertəsi</option>
+                        <option value="2">2. Çərşənbə axşamı</option>
+                        <option value="3">3. Çərşənbə</option>
+                        <option value="4">4. Cümə axşamı</option>
+                        <option value="5">5. Cümə</option>
+                    </select>
                 </div>
+
+                <div class="space-y-4 mb-4">
+                    <div class="grid md:grid-cols-3 gap-4">
+                        <select id="schedule-slot" class="p-3 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                            <option value="1">1-ci cüt (08:00-09:20)</option>
+                            <option value="2">2-ci cüt (09:35-10:55)</option>
+                            <option value="3">3-cü cüt (11:10-12:30)</option>
+                            <option value="4">4-cü cüt (12:45-14:05)</option>
+                            <option value="5">5-ci cüt (14:20-15:40)</option>
+                            <option value="6">6-cı cüt (15:55-17:15)</option>
+                        </select>
+                        <select id="schedule-subject"
+                            class="md:col-span-2 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                            <option value="">Fənn Seçin...</option>
+                        </select>
+                    </div>
+
+                    <div class="grid md:grid-cols-3 gap-4">
+                        <select id="schedule-type" class="p-3 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                            <option value="mühazirə">Mühazirə</option>
+                            <option value="seminar">Seminar</option>
+                        </select>
+                        <input type="text" id="schedule-teacher" placeholder="Müəllim..."
+                            class="p-3 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                        <input type="text" id="schedule-room" placeholder="Otaq..."
+                            class="p-3 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                    </div>
+                </div>
+
+                <button id="btn-add-schedule"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-bold transition">Cədvələ
+                    Əlavə Et</button>
+            </div>
+            <!-- Schedule Preview -->
+            <div class="bg-gray-900 p-6 rounded-xl border border-gray-700">
+                <h3 class="text-xl font-bold mb-4">Mövcud Cədvəl (Önizləmə)</h3>
+                <div id="preview-schedule">
+                    <p class="text-gray-500">Yüklənir...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Content: Subjects -->
+        <div id="tab-subjects" class="tab-content space-y-6">
+            <div class="bg-gray-900 p-6 rounded-xl border border-gray-700">
+                <h3 class="text-xl font-bold mb-4">Yeni Fənn Əlavə Et</h3>
+                <div class="flex gap-4">
+                    <input type="text" id="new-subject-name" placeholder="Fənnin adı..."
+                        class="flex-grow p-3 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                    <button id="btn-add-subject"
+                        class="bg-purple-600 hover:bg-purple-700 text-white px-6 rounded-lg font-bold transition">Əlavə
+                        Et</button>
+                </div>
+            </div>
+            <div class="bg-gray-900 p-6 rounded-xl border border-gray-700">
+                <h3 class="text-xl font-bold mb-4">Aktiv Fənlər</h3>
+                <ul id="subjects-list" class="list-disc list-inside text-gray-300 space-y-2"></ul>
+            </div>
+        </div>
+
+        <!-- Tab Content: Semester -->
+        <div id="tab-semester" class="tab-content space-y-6">
+            <div class="bg-gray-900 p-6 rounded-xl border border-gray-700 border-l-4 border-l-red-500">
+                <h3 class="text-xl font-bold mb-4 text-red-400">Yeni Semestr Yarat</h3>
+                <p class="text-gray-400 mb-4 text-sm">DİQQƏT: Yeni semestr yaratdıqda, cari aktiv semestr arxivlənəcək.
+                    Bütün cədvəl və qayıblar arxivdə qalacaq, yeni semestr üçün boş cədvəl açılacaq.</p>
+                <div class="flex gap-4">
+                    <input type="text" id="new-semester-name" placeholder="Məs: Payız 2024"
+                        class="flex-grow p-3 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                    <button id="btn-create-semester"
+                        class="bg-red-600 hover:bg-red-700 text-white px-6 rounded-lg font-bold transition">Yarat və
+                        Aktivləşdir</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Content: Settings/Migration -->
+        <div id="tab-settings" class="tab-content space-y-6">
+            <div class="bg-gray-900 p-6 rounded-xl border border-gray-700">
+                <h3 class="text-xl font-bold mb-4 text-yellow-500">Məlumatların Miqrasiyası</h3>
+                <p class="text-gray-400 mb-4">Köhnə sistemdən qalan statik tələbələri və qayıbları yeni verilənlər
+                    bazasına köçürmək üçün aşağıdakı düymələrdən istifadə edin.</p>
+
+                <div class="space-y-4">
+                    <div class="p-4 bg-gray-800 rounded border border-gray-600">
+                        <h4 class="font-bold text-white mb-2">1. Tələbələri Köçür</h4>
+                        <p class="text-xs text-gray-400 mb-3">Statik siyahıdakı tələbələri "students" kolleksiyasına
+                            əlavə edər.</p>
+                        <button id="btn-migrate-students"
+                            class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded font-bold transition">Tələbələri
+                            Köçür</button>
+                    </div>
+
+                    <div class="p-4 bg-gray-800 rounded border border-gray-600">
+                        <h4 class="font-bold text-white mb-2">2. Köhnə Qayıbları Köçür</h4>
+                        <p class="text-xs text-gray-400 mb-3">Köhnə "qayiblar" kolleksiyasını yeni "absences_log"a əlavə
+                            edər.</p>
+                        <button id="btn-migrate-absences"
+                            class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded font-bold transition">Qayıbları
+                            Köçür</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, onSnapshot, collection, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        
+        import { SystemManager } from "./firestore_manager.js";
+
         const firebaseConfig = {
             apiKey: "AIzaSyAtQ_laoPhn_31RgUFp5hkHPzAcYJSH9_8",
             authDomain: "davamiyyet-sistemi.firebaseapp.com",
@@ -98,154 +255,313 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
+        const manager = new SystemManager(db);
+        const currentGroupId = "758_ITS";
 
-        const ADMIN_PASSWORD = "admin123";
-
+        // UI References
         const loginScreen = document.getElementById('login-screen');
         const adminPanel = document.getElementById('admin-panel');
-        const loginButton = document.getElementById('login-button');
-        const logoutButton = document.getElementById('logout-button');
-        const passwordInput = document.getElementById('password');
-        const loginError = document.getElementById('login-error');
-        const customModal = document.getElementById('custom-modal');
-        const modalText = document.getElementById('modal-text');
-        const modalButtons = document.getElementById('modal-buttons');
-
-        const students = ["İsayev Ramal Rəfayıl", "Qulamov Kamil Amil", "Abbaszadə Salman Məsud", "Heydərli Heydər Sabir", "Mikayılova Lalə Samir", "Seyidov Nurəli Mirnayıb", "Kübərov Rahid Mahmud", "Bayramov Məmməd Vaqif", "Həsənov Mənzər İlqar", "Rüstəmov Elgün Ceyhun", "Xasayeva Nərmin Azər", "İbalı Cəmilə Rəfail", "Mirzəyeva Nüşabə Hacıəli", "Muradova Leyla Qadir", "Əhmədov Kənan Ceyhun", "Sultanlı Nihad Sərhad", "Əsgərov Elnar Vüsal", "Hüseynli Nərgiz Mütəllim", "Mirişov Nihad Murad", "Ağalizadə Səid Elman", "Hüseynova Firuzə Sənan", "Ağakərimov Fəqan Alim", "Həsənova Cəmalə Sergey", "Əliyev Fuad Razim", "Orucov Nurlan Seymur"];
-        const subjects = ["Ehtimal nəzəriyyəsi və statistika", "Sistem proqramlaşdırma", "XDIAK-3", "Verilənlər bazası sistemləri", "Kompüter arxitekturası-1", "Web sistemləri və texnologiyaları"];
-
+        const activeSemesterDisplay = document.getElementById('active-semester-display');
         const studentSelect = document.getElementById('student-select');
-        const subjectSelect = document.getElementById('subject-select');
-        students.forEach(student => {
-            studentSelect.innerHTML += `<option value="${student}">${student}</option>`;
-        });
-        subjects.forEach(subject => {
-            subjectSelect.innerHTML += `<option value="${subject}">${subject}</option>`;
+        const subjectSelectAbsence = document.getElementById('subject-select-absence');
+        const subjectsList = document.getElementById('subjects-list');
+        const absencesList = document.getElementById('absences-list');
+
+        let activeSemesterId = null;
+        let staticStudents = ["İsayev Ramal Rəfayıl", "Qulamov Kamil Amil", "Abbaszadə Salman Məsud", "Heydərli Heydər Sabir", "Mikayılova Lalə Samir", "Seyidov Nurəli Mirnayıb", "Kübərov Rahid Mahmud", "Bayramov Məmməd Vaqif", "Həsənov Mənzər İlqar", "Rüstəmov Elgün Ceyhun", "Xasayeva Nərmin Azər", "İbalı Cəmilə Rəfail", "Mirzəyeva Nüşabə Hacıəli", "Muradova Leyla Qadir", "Əhmədov Kənan Ceyhun", "Sultanlı Nihad Sərhad", "Əsgərov Elnar Vüsal", "Hüseynli Nərgiz Mütəllim", "Mirişov Nihad Murad", "Ağalizadə Səid Elman", "Hüseynova Firuzə Sənan", "Ağakərimov Fəqan Alim", "Həsənova Cəmalə Sergey", "Əliyev Fuad Razim", "Orucov Nurlan Seymur"];
+
+        // --- AUTH & INIT ---
+        document.getElementById('login-button').addEventListener('click', () => {
+            if (document.getElementById('password').value === "admin123") {
+                sessionStorage.setItem('isAdminAuthenticated', 'true');
+                checkLogin();
+            } else {
+                document.getElementById('login-error').classList.remove('hidden');
+            }
         });
 
-        const bakuDate = new Date().toLocaleString("en-US", { timeZone: "Asia/Baku" });
-        const baku = new Date(bakuDate);
-        const yyyy = baku.getFullYear();
-        const mm = String(baku.getMonth() + 1).padStart(2, "0");
-        const dd = String(baku.getDate()).padStart(2, "0");
-        document.getElementById("date-input").value = `${yyyy}-${mm}-${dd}`;
+        document.getElementById('logout-button').addEventListener('click', () => {
+            sessionStorage.removeItem('isAdminAuthenticated');
+            window.location.reload();
+        });
 
         function checkLogin() {
             if (sessionStorage.getItem('isAdminAuthenticated') === 'true') {
                 loginScreen.classList.add('hidden');
                 adminPanel.classList.remove('hidden');
-                signInToFirebase();
+                signInAnonymously(auth);
             }
         }
+        checkLogin();
 
-        loginButton.addEventListener('click', () => {
-            if (passwordInput.value === ADMIN_PASSWORD) {
-                sessionStorage.setItem('isAdminAuthenticated', 'true');
-                checkLogin();
-                loginError.classList.add('hidden');
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                await loadInitialData();
+                setupRealtimeListeners();
+            }
+        });
+
+        async function loadInitialData() {
+            const semester = await manager.getActiveSemester();
+            if (semester) {
+                activeSemesterId = semester.id;
+                activeSemesterDisplay.textContent = semester.name;
+                await loadSubjects();
+                await loadSubjects();
+                await loadStudents();
+                await loadGroupSchedule();
             } else {
-                loginError.classList.remove('hidden');
+                activeSemesterDisplay.textContent = "Aktiv Semestr Yoxdur";
             }
-        });
-        
-        logoutButton.addEventListener('click', () => {
-            sessionStorage.removeItem('isAdminAuthenticated');
-            loginScreen.classList.remove('hidden');
-            adminPanel.classList.add('hidden');
-        });
 
-        async function signInToFirebase() {
-             try { await signInAnonymously(auth); } catch (error) { console.error("Firebase anonim giriş xətası:", error); }
+            // Set default date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('date-input').value = today;
         }
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) { loadAbsences(); }
-        });
+        async function loadSubjects() {
+            if (!activeSemesterId) return;
+            const subjects = await manager.getGroupSubjects(activeSemesterId, currentGroupId);
+            const scheduleSubject = document.getElementById('schedule-subject');
 
-        const addAbsenceButton = document.getElementById('add-absence-button');
-        const successMessage = document.getElementById('success-message');
+            // Populate Dropdowns
+            subjectSelectAbsence.innerHTML = '<option value="">Fənn Seçin...</option>';
+            scheduleSubject.innerHTML = '<option value="">Fənn Seçin...</option>';
 
-        addAbsenceButton.addEventListener('click', async () => {
-            const student = studentSelect.value;
-            const subject = subjectSelect.value;
-            const date = document.getElementById('date-input').value;
+            subjects.forEach(sub => {
+                subjectSelectAbsence.innerHTML += `<option value="${sub}">${sub}</option>`;
+                scheduleSubject.innerHTML += `<option value="${sub}">${sub}</option>`;
+            });
 
-            if (!student || !subject || !date) {
-                showModal("Zəhmət olmasa bütün xanaları doldurun.", [{ text: "Bağla", class: "bg-gray-600 hover:bg-gray-700", onClick: hideModal }]);
+            // Populate List
+            subjectsList.innerHTML = subjects.map(s => `<li>${s}</li>`).join('');
+        }
+
+        async function loadStudents() {
+            studentSelect.innerHTML = '<option value="">Tələbə Seçin...</option>';
+
+            // Try to fetch from Firestore first
+            const dbStudents = await manager.getAllStudents(currentGroupId);
+
+            if (dbStudents.length > 0) {
+                dbStudents.forEach(s => {
+                    studentSelect.innerHTML += `<option value="${s}">${s}</option>`;
+                });
+            } else {
+                // Fallback to static if DB empty (pre-migration)
+                staticStudents.forEach(s => {
+                    studentSelect.innerHTML += `<option value="${s}">${s}</option>`;
+                });
+            }
+        }
+
+        function setupRealtimeListeners() {
+            const q = query(collection(db, "absences_log"), orderBy("timestamp", "desc"));
+            onSnapshot(q, (snapshot) => {
+                absencesList.innerHTML = snapshot.empty ? '<p class="text-gray-500">Qayıb yoxdur.</p>' : '';
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const el = document.createElement('div');
+                    el.className = 'flex justify-between items-center bg-gray-800 p-3 rounded border border-gray-700';
+                    el.innerHTML = `
+                        <div>
+                            <p class="font-bold text-gray-200">${data.studentName}</p>
+                            <p class="text-xs text-gray-400">${data.subject} | ${data.date}</p>
+                        </div>
+                        <button class="delete-btn text-red-500 hover:text-red-400 font-bold px-2">&times;</button>
+                    `;
+                    el.querySelector('.delete-btn').onclick = () => deleteAbsence(doc.id);
+                    absencesList.appendChild(el);
+                });
+            });
+        }
+
+        // --- ACTIONS ---
+
+        // 1. Add Semester
+        document.getElementById('btn-create-semester').onclick = async () => {
+            const name = document.getElementById('new-semester-name').value;
+            if (!name) return alert("Semestr adını daxil edin!");
+            if (confirm("Yeni semestr yaradilsin?")) {
+                await manager.createSemester(name);
+                window.location.reload();
+            }
+        };
+
+        // 2. Add Subject
+        document.getElementById('btn-add-subject').onclick = async () => {
+            const name = document.getElementById('new-subject-name').value;
+            if (!name || !activeSemesterId) return;
+            await manager.addSubjectToGroup(activeSemesterId, currentGroupId, name);
+            document.getElementById('new-subject-name').value = '';
+            await loadSubjects();
+            await loadStudents();
+            await loadGroupSchedule();
+        };
+
+        // 3. Add Schedule
+        document.getElementById('btn-add-schedule').onclick = async () => {
+            const weekType = document.getElementById('schedule-week-type').value;
+            const day = document.getElementById('schedule-day').value;
+
+            const slot = document.getElementById('schedule-slot').value;
+            const subject = document.getElementById('schedule-subject').value;
+            const type = document.getElementById('schedule-type').value;
+            const teacher = document.getElementById('schedule-teacher').value;
+            const room = document.getElementById('schedule-room').value;
+
+            if (!subject || !teacher || !room || !activeSemesterId) return alert("Bütün xanaları doldurun!");
+
+            const times = {
+                "1": "08:00-09:20",
+                "2": "09:35-10:55",
+                "3": "11:10-12:30",
+                "4": "12:45-14:05",
+                "5": "14:20-15:40",
+                "6": "15:55-17:15"
+            };
+            const timeStr = times[slot] || "";
+
+            // Format: "Subject (Type) - Teacher (Time, Otaq Room)"
+            // We adding a hidden prefix for sorting: "{1} ..."
+            // This way we can sort by slot, but display without it.
+            const lessonString = `{${slot}} ${subject} (${type}) - ${teacher} (${timeStr}, Otaq ${room})`;
+
+            try {
+                if (weekType === 'both') {
+                    await manager.addLessonToSchedule(activeSemesterId, currentGroupId, 'alt', day, lessonString);
+                    await manager.addLessonToSchedule(activeSemesterId, currentGroupId, 'ust', day, lessonString);
+                } else {
+                    await manager.addLessonToSchedule(activeSemesterId, currentGroupId, weekType, day, lessonString);
+                }
+
+                // Clear inputs
+                document.getElementById('schedule-teacher').value = '';
+                document.getElementById('schedule-room').value = '';
+                alert("Cədvələ əlavə edildi!");
+                loadGroupSchedule(); // Refresh preview
+            } catch (e) {
+                console.error(e);
+                alert("Xəta: " + e.message);
+            }
+        };
+
+        // Load Schedule Preview
+        async function loadGroupSchedule() {
+            if (!activeSemesterId) return;
+            const schedule = await manager.getGroupSchedule(activeSemesterId, currentGroupId);
+            const previewContainer = document.getElementById('preview-schedule');
+
+            if (!schedule) {
+                previewContainer.innerHTML = "<p>Cədvəl tapılmadı.</p>";
                 return;
             }
 
-            try {
-                await addDoc(collection(db, "qayiblar"), { usaqAdi: student, fenn: subject, tarix: date, timestamp: serverTimestamp() });
-                successMessage.classList.remove('hidden');
-                setTimeout(() => { successMessage.classList.add('hidden'); }, 3000);
-            } catch (e) {
-                console.error("Sənəd əlavə edilərkən xəta: ", e);
-                showModal("Qayıb əlavə edilərkən xəta baş verdi.", [{ text: "Bağla", class: "bg-red-600 hover:bg-red-700", onClick: hideModal }]);
+            let html = '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
+
+            // Helper to render a day
+            const renderDay = (week, dayName, dayCode, lessons) => {
+                if (!lessons || lessons.length === 0) return '';
+                // Sort lessons? They are strings, maybe just display as is 
+                // or try to keep input order. They are array pushed..
+                return `
+                    <div class="bg-gray-700 p-2 rounded mb-2">
+                        <div class="font-bold text-yellow-400 border-b border-gray-600 mb-1">${week.toUpperCase()} - ${dayName}</div>
+                        ${lessons.sort().map((l, idx) => {
+                    // l might be "{1} Math..." or "1) Math..." (legacy)
+                    let display = l;
+                    if (l.startsWith('{')) {
+                        display = l.substring(l.indexOf('}') + 1).trim();
+                    }
+                    // Show shift-based numbering for preview
+                    let slotNum = null;
+                    if (l.startsWith('{')) {
+                        const endIdx = l.indexOf('}');
+                        slotNum = parseInt(l.substring(1, endIdx));
+                    }
+                    const mappedNum = (slotNum && slotNum > 3) ? (slotNum - 3) : (slotNum || idx + 1);
+
+                    return `
+                            <div class="flex justify-between items-start text-sm bg-gray-800 p-1 rounded mb-1">
+                                <span><span class="font-bold text-gray-500 mr-2">${mappedNum})</span>${display}</span>
+                                <button onclick="deleteLesson('${week}', '${dayCode}', '${l.replace(/'/g, "\\'")}')" class="text-red-500 hover:text-white px-1 ml-2">&times;</button>
+                            </div>
+                        `}).join('')}
+                    </div>
+                `;
+            };
+
+            const days = { "1": "Bazar ertəsi", "2": "Çərşənbə axşamı", "3": "Çərşənbə", "4": "Cümə axşamı", "5": "Cümə" };
+
+            // Alt
+            html += '<div class="border border-gray-600 p-2 rounded"> <h3 class="text-center font-bold text-blue-300 mb-2">Alt Həftə</h3>';
+            for (let d in days) {
+                html += renderDay('alt', days[d], d, schedule.alt?.[d]);
             }
+            html += '</div>';
+
+            // Ust
+            html += '<div class="border border-gray-600 p-2 rounded"> <h3 class="text-center font-bold text-green-300 mb-2">Üst Həftə</h3>';
+            for (let d in days) {
+                html += renderDay('ust', days[d], d, schedule.ust?.[d]);
+            }
+            html += '</div>';
+
+            html += '</div>';
+            previewContainer.innerHTML = html;
+        }
+
+        // Expose delete to global scope
+        window.deleteLesson = async (week, day, lessonStr) => {
+            if (!confirm("Bu dərs silinsin?")) return;
+            try {
+                await manager.deleteLessonFromSchedule(activeSemesterId, currentGroupId, week, day, lessonStr);
+                loadGroupSchedule();
+            } catch (e) {
+                alert("Xəta: " + e.message);
+            }
+        };
+
+        // 4. Add Absence
+        document.getElementById('btn-add-absence').onclick = async () => {
+            const student = studentSelect.value;
+            const subject = subjectSelectAbsence.value;
+            const date = document.getElementById('date-input').value;
+            if (!student || !subject || !date || !activeSemesterId) return alert("Məlumatları tam doldurun!");
+            await manager.addAbsence(activeSemesterId, student, subject, date);
+            alert("Qayıb yazıldı!");
+        };
+
+        async function deleteAbsence(id) {
+            if (confirm("Silinsin?")) await manager.deleteAbsenceLog(id);
+        }
+
+        // --- MIGRATION ---
+        document.getElementById('btn-migrate-students').onclick = async () => {
+            if (confirm("Tələbələr koçürülsün?")) {
+                await manager.migrateStudents(staticStudents, currentGroupId);
+                alert("Hazırdır!");
+                await loadStudents();
+            }
+        };
+
+        document.getElementById('btn-migrate-absences').onclick = async () => {
+            if (confirm("Qayıblar bərpa edilsin?")) {
+                const c = await manager.migrateOldAbsences();
+                alert(`${c} qayıb bərpa edildi.`);
+            }
+        };
+
+        // --- TABS ---
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById(btn.dataset.tab).classList.add('active');
+            });
         });
-
-        const absencesList = document.getElementById('absences-list');
-        function loadAbsences() {
-            const q = query(collection(db, "qayiblar"), orderBy("timestamp", "desc"));
-            onSnapshot(q, (querySnapshot) => {
-                absencesList.innerHTML = querySnapshot.empty ? '<p class="text-gray-500">Heç bir qayıb qeyd edilməyib.</p>' : '';
-                querySnapshot.forEach((doc) => {
-                    const absence = doc.data();
-                    const absenceElement = document.createElement('div');
-                    absenceElement.className = 'flex justify-between items-center bg-gray-800 p-4 rounded-lg border border-gray-700';
-                    absenceElement.innerHTML = `
-                        <div>
-                            <p class="font-semibold text-gray-200">${absence.usaqAdi}</p>
-                            <p class="text-sm text-gray-400">${absence.fenn} - <span class="font-mono">${absence.tarix}</span></p>
-                        </div>
-                        <button data-id="${doc.id}" class="delete-btn flex items-center justify-center w-8 h-8 bg-gray-700 text-red-400 rounded-full hover:bg-red-500 hover:text-white transition-all duration-200 text-xl font-bold">&times;</button>
-                    `;
-                    absencesList.appendChild(absenceElement);
-                });
-
-                document.querySelectorAll('.delete-btn').forEach(button => {
-                    button.addEventListener('click', (e) => {
-                        const docId = e.target.closest('button').getAttribute('data-id');
-                        showModal("Bu qayıbı silmək istədiyinizə əminsiniz?", [
-                            { 
-                                text: "Bəli, sil", 
-                                class: "bg-red-600 hover:bg-red-700", 
-                                onClick: async () => {
-                                    try {
-                                        await deleteDoc(doc(db, "qayiblar", docId));
-                                        hideModal();
-                                    } catch (error) {
-                                        console.error("Silmə zamanı xəta:", error);
-                                        hideModal();
-                                    }
-                                }
-                            },
-                            { text: "Ləğv et", class: "bg-gray-600 hover:bg-gray-700", onClick: hideModal }
-                        ]);
-                    });
-                });
-            });
-        }
-        
-        function showModal(text, buttons) {
-            modalText.textContent = text;
-            modalButtons.innerHTML = '';
-            buttons.forEach(btnInfo => {
-                const button = document.createElement('button');
-                button.textContent = btnInfo.text;
-                button.className = `text-white px-6 py-2 rounded-full transition font-semibold shadow-md hover:scale-105 ${btnInfo.class}`;
-                button.onclick = btnInfo.onClick;
-                modalButtons.appendChild(button);
-            });
-            customModal.classList.remove('hidden');
-        }
-
-        function hideModal() {
-            customModal.classList.add('hidden');
-        }
-
-        checkLogin();
     </script>
 </body>
+
 </html>
