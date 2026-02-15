@@ -132,6 +132,67 @@ export class SystemManager {
         return { subjects: [], limits: {} };
     }
 
+    async updateSubject(semesterId, groupId, oldName, newName, limit) {
+        const groupRef = doc(this.db, "semesters", semesterId, "groups", groupId);
+
+        await runTransaction(this.db, async (transaction) => {
+            const groupDoc = await transaction.get(groupRef);
+            if (!groupDoc.exists()) throw "Group not found!";
+
+            const data = groupDoc.data();
+            let subjects = data.subjects || [];
+            let limits = data.subjectLimits || {};
+
+            // 1. Rename if needed
+            if (oldName !== newName) {
+                const idx = subjects.indexOf(oldName);
+                if (idx !== -1) {
+                    subjects[idx] = newName;
+                    // Move limit
+                    if (limits[oldName]) {
+                        limits[newName] = limits[oldName];
+                        delete limits[oldName];
+                    }
+                }
+            }
+
+            // 2. Update limit
+            limits[newName] = parseInt(limit);
+
+            transaction.update(groupRef, {
+                subjects: subjects,
+                subjectLimits: limits
+            });
+        });
+    }
+
+    async deleteSubject(semesterId, groupId, subjectName) {
+        const groupRef = doc(this.db, "semesters", semesterId, "groups", groupId);
+
+        await runTransaction(this.db, async (transaction) => {
+            const groupDoc = await transaction.get(groupRef);
+            if (!groupDoc.exists()) throw "Group not found!";
+
+            const data = groupDoc.data();
+            let subjects = data.subjects || [];
+            let limits = data.subjectLimits || {};
+
+            const idx = subjects.indexOf(subjectName);
+            if (idx !== -1) {
+                subjects.splice(idx, 1);
+            }
+
+            if (limits[subjectName]) {
+                delete limits[subjectName];
+            }
+
+            transaction.update(groupRef, {
+                subjects: subjects,
+                subjectLimits: limits
+            });
+        });
+    }
+
     // --- Schedule Management ---
 
     async addLessonToSchedule(semesterId, groupId, weekType, dayIndex, lessonString) {
