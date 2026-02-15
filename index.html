@@ -539,27 +539,138 @@
             const timeStr = times[slot] || "";
 
             // Format: "Subject (Type) - Teacher (Time, Otaq Room)"
-            // We adding a hidden prefix for sorting: "{1} ..."
-            // This way we can sort by slot, but display without it.
             const lessonString = `{${slot}} ${subject} (${type}) - ${teacher} (${timeStr}, Otaq ${room})`;
 
             try {
-                if (weekType === 'both') {
-                    await manager.addLessonToSchedule(activeSemesterId, currentGroupId, 'alt', day, lessonString);
-                    await manager.addLessonToSchedule(activeSemesterId, currentGroupId, 'ust', day, lessonString);
+                if (window.editingLesson) {
+                    // UPDATE MODE
+                    await manager.updateLessonInSchedule(
+                        activeSemesterId,
+                        currentGroupId,
+                        window.editingLesson.week,
+                        window.editingLesson.day,
+                        window.editingLesson.originalString,
+                        lessonString
+                    );
+                    alert("Dərs yeniləndi!");
+                    cancelEditLesson();
                 } else {
-                    await manager.addLessonToSchedule(activeSemesterId, currentGroupId, weekType, day, lessonString);
+                    // CREATE MODE
+                    if (weekType === 'both') {
+                        await manager.addLessonToSchedule(activeSemesterId, currentGroupId, 'alt', day, lessonString);
+                        await manager.addLessonToSchedule(activeSemesterId, currentGroupId, 'ust', day, lessonString);
+                    } else {
+                        await manager.addLessonToSchedule(activeSemesterId, currentGroupId, weekType, day, lessonString);
+                    }
+                    // Clear inputs
+                    document.getElementById('schedule-teacher').value = '';
+                    document.getElementById('schedule-room').value = '';
+                    alert("Cədvələ əlavə edildi!");
                 }
 
-                // Clear inputs
-                document.getElementById('schedule-teacher').value = '';
-                document.getElementById('schedule-room').value = '';
-                alert("Cədvələ əlavə edildi!");
                 loadGroupSchedule(); // Refresh preview
             } catch (e) {
                 console.error(e);
-                alert("Xəta: " + e.message);
+                alert("Xəta: " + (e.message || e));
             }
+        };
+
+        // Edit Lesson State
+        window.editingLesson = null;
+
+        window.startEditLesson = (week, day, lessonStr) => {
+            console.log("Editing:", lessonStr);
+            window.editingLesson = { week, day, originalString: lessonStr };
+
+            // Parse lesson string to populate form
+            // Format: "{slot} Subject (Type) - Teacher (Time, Otaq Room)"
+            // Example: "{1} Math (Lec) - John Doe (08:00-09:20, Otaq 101)"
+
+            try {
+                let slot = "1";
+                let remainder = lessonStr;
+
+                if (lessonStr.startsWith('{')) {
+                    const endIdx = lessonStr.indexOf('}');
+                    slot = lessonStr.substring(1, endIdx);
+                    remainder = lessonStr.substring(endIdx + 1).trim();
+                }
+
+                // Split by " (" for type?
+                // remainder: "Math (Lec) - John Doe (08:00-09:20, Otaq 101)"
+                const typeStart = remainder.lastIndexOf(" (");
+                // wait, this is tricky because type is also inside ().
+                // Let's rely on dash: " - "
+                const dashSplit = remainder.split(" - ");
+                const leftPart = dashSplit[0]; // "Math (Lec)"
+                const rightPart = dashSplit[1]; // "John Doe (08:00-09:20, Otaq 101)"
+
+                const typeMatch = leftPart.match(/\(([^)]+)\)$/);
+                const type = typeMatch ? typeMatch[1] : ""; // "Lec"
+                const subject = leftPart.replace(` (${type})`, "").trim();
+
+                // rightPart: "John Doe (Time, Otaq Room)"
+                const lastParenStart = rightPart.lastIndexOf(" (");
+                const teacher = rightPart.substring(0, lastParenStart).trim();
+                const locationPart = rightPart.substring(lastParenStart + 2, rightPart.length - 1); // "Time, Otaq Room"
+
+                // locationPart: "08:00-09:20, Otaq 101"
+                // Extract Room
+                const roomMatch = locationPart.match(/Otaq (.+)$/);
+                const room = roomMatch ? roomMatch[1] : "";
+
+                // Set Values
+                document.getElementById('schedule-week-type').value = week; // Can't edit week for existing lesson easily via dropdown if we strict check, but fine.
+                document.getElementById('schedule-day').value = day;
+                document.getElementById('schedule-slot').value = slot;
+                document.getElementById('schedule-subject').value = subject;
+                document.getElementById('schedule-type').value = type;
+                document.getElementById('schedule-teacher').value = teacher;
+                document.getElementById('schedule-room').value = room;
+
+                // UI Update
+                const btn = document.getElementById('btn-add-schedule');
+                btn.textContent = "Dəyişikliyi Yadda Saxla";
+                btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                btn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+
+                // Add Cancel Button if not exists
+                let cancelBtn = document.getElementById('btn-cancel-edit');
+                if (!cancelBtn) {
+                    cancelBtn = document.createElement('button');
+                    cancelBtn.id = 'btn-cancel-edit';
+                    cancelBtn.textContent = "Ləğv et";
+                    cancelBtn.className = "bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded transition-colors ml-2";
+                    cancelBtn.onclick = cancelEditLesson;
+                    btn.parentNode.appendChild(cancelBtn);
+                }
+                cancelBtn.classList.remove('hidden');
+
+                // Scroll to form
+                const formEl = document.getElementById('schedule-week-type');
+                if (formEl) formEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            } catch (e) {
+                console.error("Parse error", e);
+                alert("Dərsi parse etmək olmadı: " + e);
+            }
+        };
+
+        window.cancelEditLesson = () => {
+            window.editingLesson = null;
+
+            // Reset Form Defaults
+            document.getElementById('schedule-teacher').value = '';
+            document.getElementById('schedule-room').value = '';
+
+            // Reset Button
+            const btn = document.getElementById('btn-add-schedule');
+            btn.textContent = "Cədvələ Əlavə Et";
+            btn.classList.add('bg-green-600', 'hover:bg-green-700');
+            btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+
+            const cancelBtn = document.getElementById('btn-cancel-edit');
+            if (cancelBtn) cancelBtn.classList.add('hidden');
         };
 
         // Load Schedule Preview
@@ -597,10 +708,17 @@
                     }
                     const mappedNum = (slotNum && slotNum > 3) ? (slotNum - 3) : (slotNum || idx + 1);
 
+                    // Parse for Edit
+                    // Format: "{1} Math (Lec) - Teacher (08:00..., Otaq 101)"
+                    const safeLesson = l.replace(/'/g, "\\'");
+
                     return `
-                            <div class="flex justify-between items-start text-sm bg-gray-800 p-1 rounded mb-1">
+                            <div class="flex justify-between items-start text-sm bg-gray-800 p-1 rounded mb-1 border border-gray-700">
                                 <span><span class="font-bold text-gray-500 mr-2">${mappedNum})</span>${display}</span>
-                                <button onclick="deleteLesson('${week}', '${dayCode}', '${l.replace(/'/g, "\\'")}')" class="text-red-500 hover:text-white px-1 ml-2">&times;</button>
+                                <div>
+                                    <button onclick="window.startEditLesson('${week}', '${dayCode}', '${safeLesson}')" class="text-blue-400 hover:text-white px-1 ml-2"><i class="ph ph-pencil-simple"></i></button>
+                                    <button onclick="deleteLesson('${week}', '${dayCode}', '${safeLesson}')" class="text-red-500 hover:text-white px-1 ml-2"><i class="ph ph-trash"></i></button>
+                                </div>
                             </div>
                         `}).join('')}
                     </div>
