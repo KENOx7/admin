@@ -474,6 +474,8 @@
                 absencesList.innerHTML = snapshot.empty ? '<p class="text-gray-500">Qayıb yoxdur.</p>' : '';
                 snapshot.forEach(doc => {
                     const data = doc.data();
+                    if (data.groupId === "758_KM") return; // Filter out 758_KM
+
                     const el = document.createElement('div');
                     el.className = 'flex justify-between items-center bg-gray-800 p-3 rounded border border-gray-700';
                     el.innerHTML = `
