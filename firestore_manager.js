@@ -290,8 +290,8 @@ export class SystemManager {
         return ref.id;
     }
 
-    async addAbsence(semesterId, studentName, subject, date) {
-        const studentId = await this.ensureStudentExists(studentName, "758_ITS");
+    async addAbsence(semesterId, groupId, studentName, subject, date) {
+        const studentId = await this.ensureStudentExists(studentName, groupId);
 
         // Add to subcollection
         const absencesRef = collection(this.db, "students", studentId, "semesters", semesterId, "absences");
@@ -306,6 +306,7 @@ export class SystemManager {
             studentId,
             studentName,
             semesterId,
+            groupId,
             subject,
             date,
             timestamp: serverTimestamp()
@@ -376,5 +377,26 @@ export class SystemManager {
         const q = query(collection(this.db, "students"), where("groupId", "==", groupId));
         const snap = await getDocs(q);
         return snap.docs.map(d => d.data().fullName).sort();
+    }
+
+    // --- Grades Management ---
+
+    async addGrade(semesterId, groupId, studentName, subject, gradeValue) {
+        const studentId = await this.ensureStudentExists(studentName, groupId);
+
+        // Add to global log for admin/student view
+        await addDoc(collection(this.db, "grades_log"), {
+            studentId,
+            studentName,
+            semesterId,
+            groupId, // Keep groupId for filtering just like absences
+            subject,
+            grade: Number(gradeValue),
+            timestamp: serverTimestamp()
+        });
+    }
+
+    async deleteGrade(logId) {
+        await deleteDoc(doc(this.db, "grades_log", logId));
     }
 }
