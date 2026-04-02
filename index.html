@@ -320,9 +320,14 @@
         async function loadStudents() {
             studentSelect.innerHTML = '<option value="">Tələbə Seçin...</option>';
             studentSelectGrade.innerHTML = '<option value="">Tələbə Seçin...</option>';
-            const dbS = await manager.getAllStudents(currentGroupId);
-            (dbS.length > 0 ? dbS : staticStudents).forEach(s => { studentSelect.innerHTML += `<option value="${s}">${s}</option>`; studentSelectGrade.innerHTML += `<option value="${s}">${s}</option>`; });
+    
+    // Bazadakı məlumatlara baxmırıq, birbaşa yuxarıda dəyişdiyin siyahını oxuyuruq:
+            staticStudents.forEach(s => { 
+            studentSelect.innerHTML += `<option value="${s}">${s}</option>`; 
+            studentSelectGrade.innerHTML += `<option value="${s}">${s}</option>`; 
+            });
         }
+
         function setupRealtimeListeners() {
             const q = query(collection(db, "absences_log"), orderBy("timestamp", "desc"));
             onSnapshot(q, (snapshot) => {
