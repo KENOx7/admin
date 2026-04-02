@@ -422,6 +422,21 @@
         document.getElementById('btn-migrate-students').onclick = async () => { if (confirm("Miqrasiya?")) { await manager.migrateStudents(staticStudents, currentGroupId); alert("Hazır!"); await loadStudents(); } };
         document.getElementById('btn-migrate-absences').onclick = async () => { if (confirm("Qayıblar bərpa edilsin?")) { const c = await manager.migrateOldAbsences(); alert(`${c} qayıb bərpa edildi.`); } };
         document.querySelectorAll('.tab-btn').forEach(b => { b.addEventListener('click', () => { document.querySelectorAll('.tab-btn').forEach(x => x.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active')); b.classList.add('active'); document.getElementById(b.dataset.tab).classList.add('active'); }); });
+
+        async function updateStudentNameInDB() {
+            const { collection, getDocs, query, where, updateDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+            const collectionsToUpdate = ["absences_log", "grades_log"];
+            for (const collName of collectionsToUpdate) {
+                const q = query(collection(db, collName), where("studentName", "==", "Həsənov Mənzər"));
+                const querySnapshot = await getDocs(q);
+                querySnapshot.forEach(async (docSnapshot) => {
+                    await updateDoc(docSnapshot.ref, {
+                        studentName: "Həsənova Mənzər"
+                    });
+                });
+            }
+        }
+        setTimeout(updateStudentNameInDB, 3000); 
     </script>
 </body>
 
