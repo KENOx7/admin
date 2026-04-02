@@ -271,7 +271,7 @@
         const app = initializeApp(firebaseConfig); const db = getFirestore(app); const auth = getAuth(app); const manager = new SystemManager(db); const currentGroupId = "758_ITS";
         const loginScreen = document.getElementById('login-screen'), adminPanel = document.getElementById('admin-panel'), activeSemesterDisplay = document.getElementById('active-semester-display'), studentSelect = document.getElementById('student-select'), studentSelectGrade = document.getElementById('student-select-grade'), subjectSelectAbsence = document.getElementById('subject-select-absence'), subjectSelectGrade = document.getElementById('subject-select-grade'), subjectsList = document.getElementById('subjects-list'), absencesList = document.getElementById('absences-list'), gradesList = document.getElementById('grades-list');
         let activeSemesterId = null;
-        let staticStudents = ["İsayev Ramal Rəfayıl", "Qulamov Kamil Amil", "Abbaszadə Salman Məsud", "Heydərli Heydər Sabir", "Mikayılova Lalə Samir", "Seyidov Nurəli Mirnayıb", "Kübərov Rahid Mahmud", "Bayramov Məmməd Vaqif", "Həsənova Mənzər İlqar", "Rüstəmov Elgün Ceyhun", "Xasayeva Nərmin Azər", "İbalı Cəmilə Rəfail", "Mirzəyeva Nüşabə Hacıəli", "Muradova Leyla Qadir", "Əhmədov Kənan Ceyhun", "Sultanlı Nihad Sərhad", "Əsgərov Elnar Vüsal", "Hüseynli Nərgiz Mütəllim", "Mirişov Nihad Murad", "Ağalizadə Səid Elman", "Hüseynova Firuzə Sənan", "Ağakərimov Fəqan Alim", "Əliyev Fuad Razim", "Orucov Nurlan Seymur"];
+        let staticStudents = ["İsayev Ramal Rəfayıl", "Qulamov Kamil Amil", "Abbaszadə Salman Məsud", "Heydərli Heydər Sabir", "Mikayılova Lalə Samir", "Seyidov Nurəli Mirnayıb", "Kübərov Rahid Mahmud", "Bayramov Məmməd Vaqif", "Həsənov Mənzər İlqar", "Rüstəmov Elgün Ceyhun", "Xasayeva Nərmin Azər", "İbalı Cəmilə Rəfail", "Mirzəyeva Nüşabə Hacıəli", "Muradova Leyla Qadir", "Əhmədov Kənan Ceyhun", "Sultanlı Nihad Sərhad", "Əsgərov Elnar Vüsal", "Hüseynli Nərgiz Mütəllim", "Mirişov Nihad Murad", "Ağalizadə Səid Elman", "Hüseynova Firuzə Sənan", "Ağakərimov Fəqan Alim", "Əliyev Fuad Razim", "Orucov Nurlan Seymur"];
         document.getElementById('login-button').addEventListener('click', () => { if (document.getElementById('password').value === "admin123") { sessionStorage.setItem('isAdminAuthenticated', 'true'); checkLogin(); } else { document.getElementById('login-error').classList.remove('hidden'); } });
         document.getElementById('logout-button').addEventListener('click', () => { sessionStorage.removeItem('isAdminAuthenticated'); window.location.reload(); });
         function checkLogin() { if (sessionStorage.getItem('isAdminAuthenticated') === 'true') { loginScreen.classList.add('hidden'); adminPanel.classList.remove('hidden'); signInAnonymously(auth); } }
@@ -320,14 +320,9 @@
         async function loadStudents() {
             studentSelect.innerHTML = '<option value="">Tələbə Seçin...</option>';
             studentSelectGrade.innerHTML = '<option value="">Tələbə Seçin...</option>';
-    
-    // Bazadakı məlumatlara baxmırıq, birbaşa yuxarıda dəyişdiyin siyahını oxuyuruq:
-            staticStudents.forEach(s => { 
-            studentSelect.innerHTML += `<option value="${s}">${s}</option>`; 
-            studentSelectGrade.innerHTML += `<option value="${s}">${s}</option>`; 
-            });
+            const dbS = await manager.getAllStudents(currentGroupId);
+            (dbS.length > 0 ? dbS : staticStudents).forEach(s => { studentSelect.innerHTML += `<option value="${s}">${s}</option>`; studentSelectGrade.innerHTML += `<option value="${s}">${s}</option>`; });
         }
-
         function setupRealtimeListeners() {
             const q = query(collection(db, "absences_log"), orderBy("timestamp", "desc"));
             onSnapshot(q, (snapshot) => {
@@ -422,21 +417,6 @@
         document.getElementById('btn-migrate-students').onclick = async () => { if (confirm("Miqrasiya?")) { await manager.migrateStudents(staticStudents, currentGroupId); alert("Hazır!"); await loadStudents(); } };
         document.getElementById('btn-migrate-absences').onclick = async () => { if (confirm("Qayıblar bərpa edilsin?")) { const c = await manager.migrateOldAbsences(); alert(`${c} qayıb bərpa edildi.`); } };
         document.querySelectorAll('.tab-btn').forEach(b => { b.addEventListener('click', () => { document.querySelectorAll('.tab-btn').forEach(x => x.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active')); b.classList.add('active'); document.getElementById(b.dataset.tab).classList.add('active'); }); });
-
-        async function updateStudentNameInDB() {
-            const { collection, getDocs, query, where, updateDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
-            const collectionsToUpdate = ["absences_log", "grades_log"];
-            for (const collName of collectionsToUpdate) {
-                const q = query(collection(db, collName), where("studentName", "==", "Həsənov Mənzər"));
-                const querySnapshot = await getDocs(q);
-                querySnapshot.forEach(async (docSnapshot) => {
-                    await updateDoc(docSnapshot.ref, {
-                        studentName: "Həsənova Mənzər"
-                    });
-                });
-            }
-        }
-        setTimeout(updateStudentNameInDB, 3000); 
     </script>
 </body>
 
