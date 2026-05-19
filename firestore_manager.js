@@ -399,4 +399,61 @@ export class SystemManager {
     async deleteGrade(logId) {
         await deleteDoc(doc(this.db, "grades_log", logId));
     }
+
+    // --- Colloquium Management ---
+
+    async addColloquium(semesterId, groupId, studentName, subject, score) {
+        const studentId = await this.ensureStudentExists(studentName, groupId);
+
+        // Check if colloquium already exists for this student+subject+semester
+        const q = query(
+            collection(this.db, "colloquium_log"),
+            where("studentName", "==", studentName),
+            where("subject", "==", subject),
+            where("semesterId", "==", semesterId),
+            where("groupId", "==", groupId)
+        );
+        const existing = await getDocs(q);
+
+        if (!existing.empty) {
+            // Update existing
+            const docRef = existing.docs[0].ref;
+            await updateDoc(docRef, {
+                score: Number(score),
+                timestamp: serverTimestamp()
+            });
+        } else {
+            // Create new
+            await addDoc(collection(this.db, "colloquium_log"), {
+                studentId,
+                studentName,
+                semesterId,
+                groupId,
+                subject,
+                score: Number(score),
+                timestamp: serverTimestamp()
+            });
+        }
+    }
+
+    async deleteColloquium(logId) {
+        await deleteDoc(doc(this.db, "colloquium_log", logId));
+    }
+
+    // --- Bulk Grade Import (from OCR) ---
+
+    async bulkAddGrades(semesterId, groupId, subject, gradeType, entries) {
+        // entries: [{studentName, score}]
+        let count = 0;
+        for (const entry of entries) {
+            if (!entry.studentName || entry.score === null || entry.score === undefined) continue;
+            if (gradeType === 'colloquium') {
+                await this.addColloquium(semesterId, groupId, entry.studentName, subject, entry.score);
+            } else {
+                await this.addGrade(semesterId, groupId, entry.studentName, subject, entry.score);
+            }
+            count++;
+        }
+        return count;
+    }
 }

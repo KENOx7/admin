@@ -130,6 +130,51 @@
                     <div id="grades-list" class="space-y-3 max-h-[400px] overflow-y-auto pr-2"></div>
                 </div>
             </div>
+            <!-- Kollekvium Bölməsi -->
+            <div class="grid lg:grid-cols-2 gap-6">
+                <div class="bg-gray-900 p-6 rounded-xl border border-gray-700 border-l-4 border-l-teal-500">
+                    <h3 class="text-xl font-bold mb-4 text-teal-400">Kollekvium Balı Əlavə Et</h3>
+                    <div class="space-y-4">
+                        <select id="student-select-colloquium"
+                            class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-white">
+                            <option value="">Tələbə Seçin...</option>
+                        </select>
+                        <select id="subject-select-colloquium"
+                            class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-white">
+                            <option value="">Fənn Seçin...</option>
+                        </select>
+                        <input type="number" id="colloquium-input" placeholder="Kollekvium Balı (məs: 18)" step="0.1" min="0" max="30"
+                            class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-white">
+                        <button id="btn-add-colloquium"
+                            class="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-lg font-bold transition">Əlavə Et</button>
+                    </div>
+                </div>
+                <div class="bg-gray-900 p-6 rounded-xl border border-gray-700">
+                    <h3 class="text-xl font-bold mb-4">Mövcud Kollekviumlar</h3>
+                    <div id="colloquiums-list" class="space-y-3 max-h-[400px] overflow-y-auto pr-2"></div>
+                </div>
+            </div>
+            <!-- Toplu Qiymət Daxiletmə -->
+            <div class="bg-gray-900 p-6 rounded-xl border border-gray-700 border-l-4 border-l-purple-500">
+                <h3 class="text-xl font-bold mb-4 text-purple-400">📋 Toplu Qiymət Yaz</h3>
+                <p class="text-gray-400 text-sm mb-4">Fənn və tip seçin — tələbələr universitetin sırası ilə göstəriləcək. Balları yazıb bir kliklə hamısını saxlayın.</p>
+                <div class="grid md:grid-cols-2 gap-4 mb-4">
+                    <select id="ocr-subject-select"
+                        class="p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-white">
+                        <option value="">Fənn Seçin...</option>
+                    </select>
+                    <select id="ocr-grade-type"
+                        class="p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-white">
+                        <option value="colloquium">Kollekvium Balı</option>
+                        <option value="regular">Adi Qiymət</option>
+                    </select>
+                </div>
+                <div id="bulk-entry-container" class="hidden">
+                    <h4 class="font-bold mb-3 text-white">Balları daxil edin (Enter — növbəti tələbə):</h4>
+                    <div id="ocr-results-table" class="space-y-2 max-h-[600px] overflow-y-auto pr-1"></div>
+                    <button id="btn-ocr-save" class="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-bold transition mt-4">Hamısını Yadda Saxla</button>
+                </div>
+            </div>
         </div>
         <div id="tab-schedule" class="tab-content space-y-6">
             <div class="bg-gray-900 p-6 rounded-xl border border-gray-700">
@@ -304,6 +349,9 @@
             subjectSelectAbsence.innerHTML = '<option value="">Fənn seçin...</option>';
             subjectSelectGrade.innerHTML = '<option value="">Fənn seçin...</option>';
             subjects.forEach(sub => { subjectSelectSchedule.innerHTML += `<option value="${sub}">${sub}</option>`; subjectSelectAbsence.innerHTML += `<option value="${sub}">${sub}</option>`; subjectSelectGrade.innerHTML += `<option value="${sub}">${sub}</option>`; });
+            const _csS = document.getElementById('subject-select-colloquium'), _osS = document.getElementById('ocr-subject-select');
+            if (_csS) { _csS.innerHTML = '<option value="">Fənn seçin...</option>'; subjects.forEach(sub => _csS.innerHTML += `<option value="${sub}">${sub}</option>`); }
+            if (_osS) { _osS.innerHTML = '<option value="">Fənn seçin...</option>'; subjects.forEach(sub => _osS.innerHTML += `<option value="${sub}">${sub}</option>`); }
             subjectsList.innerHTML = subjects.map(s => {
                 const limit = limits[s] || 7, safeName = s.replace(/'/g, "\\'");
                 return `<li class="bg-gray-800 p-3 rounded flex justify-between items-center mb-2 border border-gray-700"><div><span class="font-bold text-white">${s}</span><span class="text-xs text-yellow-500 ml-2">(Limit: ${limit})</span></div><div><button onclick="window.editSubject('${safeName}', ${limit})" class="bg-blue-600 hover:bg-blue-500 text-white p-1 rounded mr-2 transition"><i class="ph ph-pencil-simple"></i></button><button onclick="window.deleteSubject('${safeName}')" class="bg-red-600 hover:bg-red-500 text-white p-1 rounded transition"><i class="ph ph-trash"></i></button></div></li>`;
@@ -322,6 +370,8 @@
             studentSelectGrade.innerHTML = '<option value="">Tələbə Seçin...</option>';
             const dbS = await manager.getAllStudents(currentGroupId);
             (dbS.length > 0 ? dbS : staticStudents).forEach(s => { studentSelect.innerHTML += `<option value="${s}">${s}</option>`; studentSelectGrade.innerHTML += `<option value="${s}">${s}</option>`; });
+            const _csT = document.getElementById('student-select-colloquium');
+            if (_csT) { _csT.innerHTML = '<option value="">Tələbə Seçin...</option>'; (dbS.length > 0 ? dbS : staticStudents).forEach(s => _csT.innerHTML += `<option value="${s}">${s}</option>`); }
         }
         function setupRealtimeListeners() {
             const q = query(collection(db, "absences_log"), orderBy("timestamp", "desc"));
@@ -361,6 +411,25 @@
                     gradesList.appendChild(el);
                 });
                 if (!hasData) gradesList.innerHTML = '<p class="text-gray-500">Qiymət yoxdur.</p>';
+            });
+            // Colloquium realtime listener
+            const qColl = query(collection(db, "colloquium_log"), orderBy("timestamp", "desc"));
+            onSnapshot(qColl, (snapshot) => {
+                const collList = document.getElementById('colloquiums-list');
+                if (!collList) return;
+                collList.innerHTML = '';
+                let hasCollData = false;
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if (data.groupId && data.groupId !== currentGroupId) return;
+                    hasCollData = true;
+                    const el = document.createElement('div');
+                    el.className = 'flex justify-between items-center bg-gray-800 p-3 rounded border border-gray-700';
+                    el.innerHTML = `<div><p class="font-bold text-gray-200">${data.studentName}</p><p class="text-xs text-gray-400">${data.subject} | Kollekvium: <strong class="text-teal-400">${data.score}</strong></p></div><button class="delete-btn text-red-500 hover:text-red-400 font-bold px-2">&times;</button>`;
+                    el.querySelector('.delete-btn').onclick = () => { if (confirm('Silinsin?')) manager.deleteColloquium(docSnap.id); };
+                    collList.appendChild(el);
+                });
+                if (!hasCollData) collList.innerHTML = '<p class="text-gray-500">Kollekvium yoxdur.</p>';
             });
         }
         document.getElementById('btn-create-semester').onclick = async () => { const n = document.getElementById('new-semester-name').value; if (n && confirm("Yeni semestr?")) { await manager.createSemester(n); window.location.reload(); } };
@@ -417,6 +486,94 @@
         document.getElementById('btn-migrate-students').onclick = async () => { if (confirm("Miqrasiya?")) { await manager.migrateStudents(staticStudents, currentGroupId); alert("Hazır!"); await loadStudents(); } };
         document.getElementById('btn-migrate-absences').onclick = async () => { if (confirm("Qayıblar bərpa edilsin?")) { const c = await manager.migrateOldAbsences(); alert(`${c} qayıb bərpa edildi.`); } };
         document.querySelectorAll('.tab-btn').forEach(b => { b.addEventListener('click', () => { document.querySelectorAll('.tab-btn').forEach(x => x.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active')); b.classList.add('active'); document.getElementById(b.dataset.tab).classList.add('active'); }); });
+
+        // === COLLOQUIUM HANDLER ===
+        document.getElementById('btn-add-colloquium').onclick = async () => {
+            const st = document.getElementById('student-select-colloquium').value;
+            const sb = document.getElementById('subject-select-colloquium').value;
+            const sc = document.getElementById('colloquium-input').value;
+            if (!st || !sb || !sc) return alert('Doldurun!');
+            try {
+                await manager.addColloquium(activeSemesterId, currentGroupId, st, sb, sc);
+                alert('Kollekvium yazıldı!');
+                document.getElementById('colloquium-input').value = '';
+            } catch (e) { alert('Xəta: ' + e.message); }
+        };
+
+        // === BULK ENTRY HANDLER ===
+        let bulkEntryData = [];
+
+        document.getElementById('ocr-subject-select').addEventListener('change', (e) => {
+            const subject = e.target.value;
+            if (!subject) {
+                document.getElementById('bulk-entry-container').classList.add('hidden');
+                return;
+            }
+
+            // Get student list in university official order (sıra nömrəsi)
+            const students = [...staticStudents];
+            bulkEntryData = students.map(s => ({ studentName: s, score: null }));
+
+            // Render form
+            const container = document.getElementById('ocr-results-table');
+            container.innerHTML = bulkEntryData.map((r, i) => {
+                return `<div class="flex items-center gap-3 p-2 rounded-lg border border-gray-700 bg-gray-800">
+                    <span class="text-gray-500 text-xs w-6 text-right font-mono">${i + 1}</span>
+                    <span class="flex-grow text-sm font-medium text-gray-200 truncate">${r.studentName}</span>
+                    <input type="number" class="bulk-score-input w-20 p-2 bg-gray-700 border border-gray-600 rounded text-white text-center text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none" data-index="${i}" placeholder="-" min="0" max="30" step="0.1">
+                </div>`;
+            }).join('');
+
+            // Auto-focus and Enter navigation
+            container.querySelectorAll('.bulk-score-input').forEach(inp => {
+                inp.addEventListener('input', (ev) => {
+                    const idx = parseInt(ev.target.dataset.index);
+                    const val = ev.target.value.trim();
+                    bulkEntryData[idx].score = val === '' ? null : Number(val);
+                });
+                inp.addEventListener('keydown', (ev) => {
+                    if (ev.key === 'Enter') {
+                        ev.preventDefault();
+                        const nextIdx = parseInt(ev.target.dataset.index) + 1;
+                        const nextInput = container.querySelector(`[data-index="${nextIdx}"]`);
+                        if (nextInput) nextInput.focus();
+                    }
+                });
+            });
+
+            document.getElementById('bulk-entry-container').classList.remove('hidden');
+            // Focus first input
+            setTimeout(() => {
+                const firstInput = container.querySelector('.bulk-score-input');
+                if (firstInput) firstInput.focus();
+            }, 300);
+        });
+
+        document.getElementById('btn-ocr-save').onclick = async () => {
+            const subject = document.getElementById('ocr-subject-select').value;
+            const gradeType = document.getElementById('ocr-grade-type').value;
+            if (!subject) return alert('Fənn seçilməyib!');
+
+            const entries = bulkEntryData.filter(r => r.score !== null && r.score !== undefined);
+            if (entries.length === 0) return alert('Heç bir bal daxil edilməyib!');
+            if (!confirm(`${entries.length} tələbə üçün ${gradeType === 'colloquium' ? 'kollekvium' : 'qiymət'} yazılsın?`)) return;
+
+            const btn = document.getElementById('btn-ocr-save');
+            btn.disabled = true;
+            btn.textContent = 'Yazılır...';
+            try {
+                const count = await manager.bulkAddGrades(activeSemesterId, currentGroupId, subject, gradeType, entries);
+                alert(`${count} bal uğurla yazıldı!`);
+                document.getElementById('bulk-entry-container').classList.add('hidden');
+                document.getElementById('ocr-file-input').value = '';
+                bulkEntryData = [];
+            } catch (e) {
+                alert('Xəta: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Hamısını Yadda Saxla';
+            }
+        };
     </script>
 </body>
 
