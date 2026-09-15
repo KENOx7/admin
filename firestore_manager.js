@@ -290,8 +290,8 @@ export class SystemManager {
         return ref.id;
     }
 
-    async addAbsence(semesterId, groupId, studentName, subject, date) {
-        const studentId = await this.ensureStudentExists(studentName, groupId);
+    async addAbsence(semesterId, studentName, subject, date) {
+        const studentId = await this.ensureStudentExists(studentName, "758_ITS");
 
         // Add to subcollection
         const absencesRef = collection(this.db, "students", studentId, "semesters", semesterId, "absences");
@@ -306,7 +306,6 @@ export class SystemManager {
             studentId,
             studentName,
             semesterId,
-            groupId,
             subject,
             date,
             timestamp: serverTimestamp()
@@ -376,7 +375,7 @@ export class SystemManager {
     async getAllStudents(groupId) {
         const q = query(collection(this.db, "students"), where("groupId", "==", groupId));
         const snap = await getDocs(q);
-        return snap.docs.map(d => d.data().fullName).sort();
+        return snap.docs.map(d => d.data().fullName);
     }
 
     // --- Grades Management ---
@@ -384,12 +383,11 @@ export class SystemManager {
     async addGrade(semesterId, groupId, studentName, subject, gradeValue) {
         const studentId = await this.ensureStudentExists(studentName, groupId);
 
-        // Add to global log for admin/student view
         await addDoc(collection(this.db, "grades_log"), {
             studentId,
             studentName,
             semesterId,
-            groupId, // Keep groupId for filtering just like absences
+            groupId,
             subject,
             grade: Number(gradeValue),
             timestamp: serverTimestamp()
@@ -405,7 +403,6 @@ export class SystemManager {
     async addColloquium(semesterId, groupId, studentName, subject, score) {
         const studentId = await this.ensureStudentExists(studentName, groupId);
 
-        // Check if colloquium already exists for this student+subject+semester
         const q = query(
             collection(this.db, "colloquium_log"),
             where("studentName", "==", studentName),
@@ -416,14 +413,12 @@ export class SystemManager {
         const existing = await getDocs(q);
 
         if (!existing.empty) {
-            // Update existing
             const docRef = existing.docs[0].ref;
             await updateDoc(docRef, {
                 score: Number(score),
                 timestamp: serverTimestamp()
             });
         } else {
-            // Create new
             await addDoc(collection(this.db, "colloquium_log"), {
                 studentId,
                 studentName,
@@ -438,22 +433,5 @@ export class SystemManager {
 
     async deleteColloquium(logId) {
         await deleteDoc(doc(this.db, "colloquium_log", logId));
-    }
-
-    // --- Bulk Grade Import (from OCR) ---
-
-    async bulkAddGrades(semesterId, groupId, subject, gradeType, entries) {
-        // entries: [{studentName, score}]
-        let count = 0;
-        for (const entry of entries) {
-            if (!entry.studentName || entry.score === null || entry.score === undefined) continue;
-            if (gradeType === 'colloquium') {
-                await this.addColloquium(semesterId, groupId, entry.studentName, subject, entry.score);
-            } else {
-                await this.addGrade(semesterId, groupId, entry.studentName, subject, entry.score);
-            }
-            count++;
-        }
-        return count;
     }
 }
