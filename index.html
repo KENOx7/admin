@@ -309,7 +309,7 @@
     </div>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, onSnapshot, collection, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, onSnapshot, collection, query, orderBy, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { SystemManager } from "./firestore_manager.js";
         const firebaseConfig = { apiKey: "AIzaSyAtQ_laoPhn_31RgUFp5hkHPzAcYJSH9_8", authDomain: "davamiyyet-sistemi.firebaseapp.com", projectId: "davamiyyet-sistemi", storageBucket: "davamiyyet-sistemi.appspot.com", messagingSenderId: "773549402059", appId: "1:773549402059:web:25286906aa1d998041f84e", measurementId: "G-M3Y8QZCM8C" };
@@ -374,7 +374,8 @@
             if (_csT) { _csT.innerHTML = '<option value="">Tələbə Seçin...</option>'; (dbS.length > 0 ? dbS : staticStudents).forEach(s => _csT.innerHTML += `<option value="${s}">${s}</option>`); }
         }
         function setupRealtimeListeners() {
-            const q = query(collection(db, "absences_log"), orderBy("timestamp", "desc"));
+            // Yalnız aktiv semestrə aid qayıbları göstər
+            const q = query(collection(db, "absences_log"), where("semesterId", "==", activeSemesterId), orderBy("timestamp", "desc"));
             onSnapshot(q, (snapshot) => {
                 absencesList.innerHTML = '';
                 const validStudents = new Set();
@@ -391,9 +392,10 @@
                     el.querySelector('.delete-btn').onclick = () => deleteAbsence(doc.id);
                     absencesList.appendChild(el);
                 });
-                if (!hasData) absencesList.innerHTML = '<p class="text-gray-500">Qayıb yoxdur.</p>';
+                if (!hasData) absencesList.innerHTML = '<p class="text-gray-500">Bu semestr üçün qayıb yoxdur.</p>';
             });
-            const qGrades = query(collection(db, "grades_log"), orderBy("timestamp", "desc"));
+            // Yalnız aktiv semestrə aid qiymətləri göstər
+            const qGrades = query(collection(db, "grades_log"), where("semesterId", "==", activeSemesterId), orderBy("timestamp", "desc"));
             onSnapshot(qGrades, (snapshot) => {
                 gradesList.innerHTML = '';
                 const validStudents = new Set();
@@ -402,7 +404,7 @@
                 snapshot.forEach(doc => {
                     const data = doc.data();
                     if (data.groupId && data.groupId !== currentGroupId) return;
-                    if (!data.groupId && !validStudents.has(data.studentName)) return; // fallback
+                    if (!data.groupId && !validStudents.has(data.studentName)) return;
                     hasData = true;
                     const el = document.createElement('div');
                     el.className = 'flex justify-between items-center bg-gray-800 p-3 rounded border border-gray-700';
@@ -410,10 +412,10 @@
                     el.querySelector('.delete-btn').onclick = () => deleteGrade(doc.id);
                     gradesList.appendChild(el);
                 });
-                if (!hasData) gradesList.innerHTML = '<p class="text-gray-500">Qiymət yoxdur.</p>';
+                if (!hasData) gradesList.innerHTML = '<p class="text-gray-500">Bu semestr üçün qiymət yoxdur.</p>';
             });
-            // Colloquium realtime listener
-            const qColl = query(collection(db, "colloquium_log"), orderBy("timestamp", "desc"));
+            // Yalnız aktiv semestrə aid kollekviumları göstər
+            const qColl = query(collection(db, "colloquium_log"), where("semesterId", "==", activeSemesterId), orderBy("timestamp", "desc"));
             onSnapshot(qColl, (snapshot) => {
                 const collList = document.getElementById('colloquiums-list');
                 if (!collList) return;
@@ -429,7 +431,7 @@
                     el.querySelector('.delete-btn').onclick = () => { if (confirm('Silinsin?')) manager.deleteColloquium(docSnap.id); };
                     collList.appendChild(el);
                 });
-                if (!hasCollData) collList.innerHTML = '<p class="text-gray-500">Kollekvium yoxdur.</p>';
+                if (!hasCollData) collList.innerHTML = '<p class="text-gray-500">Bu semestr üçün kollekvium yoxdur.</p>';
             });
         }
         document.getElementById('btn-create-semester').onclick = async () => { const n = document.getElementById('new-semester-name').value; if (n && confirm("Yeni semestr?")) { await manager.createSemester(n); window.location.reload(); } };
