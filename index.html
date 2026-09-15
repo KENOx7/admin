@@ -310,7 +310,7 @@
     </div>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, onSnapshot, collection, query, orderBy, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, onSnapshot, collection, query, orderBy, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { SystemManager } from "./firestore_manager.js";
         const firebaseConfig = { apiKey: "AIzaSyAtQ_laoPhn_31RgUFp5hkHPzAcYJSH9_8", authDomain: "davamiyyet-sistemi.firebaseapp.com", projectId: "davamiyyet-sistemi", storageBucket: "davamiyyet-sistemi.appspot.com", messagingSenderId: "773549402059", appId: "1:773549402059:web:25286906aa1d998041f84e", measurementId: "G-M3Y8QZCM8C" };
@@ -322,7 +322,7 @@
         document.getElementById('logout-button').addEventListener('click', () => { sessionStorage.removeItem('isAdminAuthenticated'); window.location.reload(); });
         function checkLogin() { if (sessionStorage.getItem('isAdminAuthenticated') === 'true') { loginScreen.classList.add('hidden'); adminPanel.classList.remove('hidden'); signInAnonymously(auth); } }
         checkLogin();
-        onAuthStateChanged(auth, async (user) => { if (user) { await loadInitialData(); setupRealtimeListeners(); } });
+        onAuthStateChanged(auth, async (user) => { if (user) { await loadInitialData(); await loadAllLogs(); } });
         async function loadInitialData() {
             try {
                 const semester = await manager.getActiveSemester();
@@ -375,69 +375,67 @@
             const _csT = document.getElementById('student-select-colloquium');
             if (_csT) { _csT.innerHTML = '<option value="">Tələbə Seçin...</option>'; studentList.forEach(s => _csT.innerHTML += `<option value="${s}">${s}</option>`); }
         }
-        function setupRealtimeListeners() {
-            // Yalnız aktiv semestrə aid qayıbları göstər
-            const q = query(collection(db, "absences_log"), where("semesterId", "==", activeSemesterId), orderBy("timestamp", "desc"));
-            onSnapshot(q, (snapshot) => {
+        function setupRealtimeListeners() { /* Replaced by loadAllLogs() to avoid quota */ }
+        async function loadAllLogs() {
+            if (!activeSemesterId) return;
+            const validStudents = new Set(staticStudents);
+
+            // --- Qayıblar ---
+            try {
+                const q = query(collection(db, "absences_log"), where("semesterId", "==", activeSemesterId), limit(200));
+                const snap = await getDocs(q);
                 absencesList.innerHTML = '';
-                const validStudents = new Set();
-                for (let opt of studentSelect.options) { if (opt.value) validStudents.add(opt.value); }
-                let hasData = false;
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    if (data.groupId && data.groupId !== currentGroupId) return;
-                    if (!validStudents.has(data.studentName)) return;
-                    hasData = true;
+                const docs = [];
+                snap.forEach(doc => { const d = doc.data(); if ((!d.groupId || d.groupId === currentGroupId) && validStudents.has(d.studentName)) docs.push({ id: doc.id, ...d }); });
+                docs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                if (docs.length === 0) { absencesList.innerHTML = '<p class="text-gray-500">Bu semestr üçün qayıb yoxdur.</p>'; }
+                else docs.forEach(data => {
                     const el = document.createElement('div');
                     el.className = 'flex justify-between items-center bg-gray-800 p-3 rounded border border-gray-700';
                     el.innerHTML = `<div><p class="font-bold text-gray-200">${data.studentName}</p><p class="text-xs text-gray-400">${data.subject} | ${data.date}</p></div><button class="delete-btn text-red-500 hover:text-red-400 font-bold px-2">&times;</button>`;
-                    el.querySelector('.delete-btn').onclick = () => deleteAbsence(doc.id);
+                    el.querySelector('.delete-btn').onclick = () => deleteAbsence(data.id);
                     absencesList.appendChild(el);
                 });
-                if (!hasData) absencesList.innerHTML = '<p class="text-gray-500">Bu semestr üçün qayıb yoxdur.</p>';
-            });
-            // Yalnız aktiv semestrə aid qiymətləri göstər
-            const qGrades = query(collection(db, "grades_log"), where("semesterId", "==", activeSemesterId), orderBy("timestamp", "desc"));
-            onSnapshot(qGrades, (snapshot) => {
+            } catch(e) { console.warn('Absences load:', e.message); absencesList.innerHTML = '<p class="text-red-400 text-sm">Xəta: ' + e.message + '</p>'; }
+
+            // --- Qiymətlər ---
+            try {
+                const qG = query(collection(db, "grades_log"), where("semesterId", "==", activeSemesterId), limit(200));
+                const snapG = await getDocs(qG);
                 gradesList.innerHTML = '';
-                const validStudents = new Set();
-                for (let opt of studentSelect.options) { if (opt.value) validStudents.add(opt.value); }
-                let hasData = false;
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    if (data.groupId && data.groupId !== currentGroupId) return;
-                    if (!validStudents.has(data.studentName)) return;
-                    hasData = true;
+                const gDocs = [];
+                snapG.forEach(doc => { const d = doc.data(); if ((!d.groupId || d.groupId === currentGroupId) && validStudents.has(d.studentName)) gDocs.push({ id: doc.id, ...d }); });
+                gDocs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                if (gDocs.length === 0) { gradesList.innerHTML = '<p class="text-gray-500">Bu semestr üçün qiymət yoxdur.</p>'; }
+                else gDocs.forEach(data => {
                     const el = document.createElement('div');
                     el.className = 'flex justify-between items-center bg-gray-800 p-3 rounded border border-gray-700';
                     el.innerHTML = `<div><p class="font-bold text-gray-200">${data.studentName}</p><p class="text-xs text-gray-400">${data.subject} | Qiymət: <strong class="text-blue-400">${data.grade}</strong></p></div><button class="delete-btn text-red-500 hover:text-red-400 font-bold px-2">&times;</button>`;
-                    el.querySelector('.delete-btn').onclick = () => deleteGrade(doc.id);
+                    el.querySelector('.delete-btn').onclick = () => deleteGrade(data.id);
                     gradesList.appendChild(el);
                 });
-                if (!hasData) gradesList.innerHTML = '<p class="text-gray-500">Bu semestr üçün qiymət yoxdur.</p>';
-            });
-            // Yalnız aktiv semestrə aid kollekviumları göstər
-            const qColl = query(collection(db, "colloquium_log"), where("semesterId", "==", activeSemesterId), orderBy("timestamp", "desc"));
-            onSnapshot(qColl, (snapshot) => {
+            } catch(e) { console.warn('Grades load:', e.message); gradesList.innerHTML = '<p class="text-red-400 text-sm">Xəta: ' + e.message + '</p>'; }
+
+            // --- Kollekviumlar ---
+            try {
+                const qC = query(collection(db, "colloquium_log"), where("semesterId", "==", activeSemesterId), limit(200));
+                const snapC = await getDocs(qC);
                 const collList = document.getElementById('colloquiums-list');
-                if (!collList) return;
-                collList.innerHTML = '';
-                const validStudents = new Set();
-                for (let opt of studentSelect.options) { if (opt.value) validStudents.add(opt.value); }
-                let hasCollData = false;
-                snapshot.forEach(docSnap => {
-                    const data = docSnap.data();
-                    if (data.groupId && data.groupId !== currentGroupId) return;
-                    if (!validStudents.has(data.studentName)) return;
-                    hasCollData = true;
-                    const el = document.createElement('div');
-                    el.className = 'flex justify-between items-center bg-gray-800 p-3 rounded border border-gray-700';
-                    el.innerHTML = `<div><p class="font-bold text-gray-200">${data.studentName}</p><p class="text-xs text-gray-400">${data.subject} | Kollekvium: <strong class="text-teal-400">${data.score}</strong></p></div><button class="delete-btn text-red-500 hover:text-red-400 font-bold px-2">&times;</button>`;
-                    el.querySelector('.delete-btn').onclick = () => { if (confirm('Silinsin?')) manager.deleteColloquium(docSnap.id); };
-                    collList.appendChild(el);
-                });
-                if (!hasCollData) collList.innerHTML = '<p class="text-gray-500">Bu semestr üçün kollekvium yoxdur.</p>';
-            });
+                if (collList) {
+                    collList.innerHTML = '';
+                    const cDocs = [];
+                    snapC.forEach(doc => { const d = doc.data(); if ((!d.groupId || d.groupId === currentGroupId) && validStudents.has(d.studentName)) cDocs.push({ id: doc.id, ...d }); });
+                    cDocs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                    if (cDocs.length === 0) { collList.innerHTML = '<p class="text-gray-500">Bu semestr üçün kollekvium yoxdur.</p>'; }
+                    else cDocs.forEach(data => {
+                        const el = document.createElement('div');
+                        el.className = 'flex justify-between items-center bg-gray-800 p-3 rounded border border-gray-700';
+                        el.innerHTML = `<div><p class="font-bold text-gray-200">${data.studentName}</p><p class="text-xs text-gray-400">${data.subject} | Kollekvium: <strong class="text-teal-400">${data.score}</strong></p></div><button class="delete-btn text-red-500 hover:text-red-400 font-bold px-2">&times;</button>`;
+                        el.querySelector('.delete-btn').onclick = () => { if (confirm('Silinsin?')) manager.deleteColloquium(data.id).then(() => loadAllLogs()); };
+                        collList.appendChild(el);
+                    });
+                }
+            } catch(e) { console.warn('Colloquiums load:', e.message); }
         }
         document.getElementById('btn-create-semester').onclick = async () => { const n = document.getElementById('new-semester-name').value; if (n && confirm("Yeni semestr?")) { await manager.createSemester(n); window.location.reload(); } };
         document.getElementById('btn-add-subject').onclick = async () => { const n = document.getElementById('new-subject-name').value, l = document.getElementById('new-subject-limit').value || 7; if (n && activeSemesterId) { try { await manager.addSubjectToGroup(activeSemesterId, currentGroupId, n, l); document.getElementById('new-subject-name').value = ''; await loadSubjects(); await loadStudents(); await loadGroupSchedule(); } catch (e) { alert("Xəta: " + e.message); console.error(e); } } };
@@ -487,10 +485,10 @@
             pc.innerHTML = h;
         }
         window.deleteLesson = async (w, d, l) => { if (confirm("Silinsin?")) try { await manager.deleteLessonFromSchedule(activeSemesterId, currentGroupId, w, d, l); loadGroupSchedule(); } catch (e) { alert(e.message); } };
-        document.getElementById('btn-add-absence').onclick = async () => { const st = studentSelect.value, sb = subjectSelectAbsence.value, dt = document.getElementById('date-input').value; if (!st || !sb || !dt) return alert("Doldurun!"); await manager.addAbsence(activeSemesterId, currentGroupId, st, sb, dt); alert("Yazıldı!"); };
-        document.getElementById('btn-add-grade').onclick = async () => { const st = studentSelectGrade.value, sb = subjectSelectGrade.value, gr = document.getElementById('grade-input').value; if (!st || !sb || !gr) return alert("Doldurun!"); await manager.addGrade(activeSemesterId, currentGroupId, st, sb, gr); alert("Qiymət yazıldı!"); document.getElementById('grade-input').value = ''; };
-        async function deleteAbsence(id) { if (confirm("Silinsin?")) await manager.deleteAbsenceLog(id); }
-        async function deleteGrade(id) { if (confirm("Qiymət silinsin?")) await manager.deleteGrade(id); }
+        document.getElementById('btn-add-absence').onclick = async () => { const st = studentSelect.value, sb = subjectSelectAbsence.value, dt = document.getElementById('date-input').value; if (!st || !sb || !dt) return alert("Doldurun!"); await manager.addAbsence(activeSemesterId, currentGroupId, st, sb, dt); alert("Yazıldı!"); await loadAllLogs(); };
+        document.getElementById('btn-add-grade').onclick = async () => { const st = studentSelectGrade.value, sb = subjectSelectGrade.value, gr = document.getElementById('grade-input').value; if (!st || !sb || !gr) return alert("Doldurun!"); await manager.addGrade(activeSemesterId, currentGroupId, st, sb, gr); alert("Qiymət yazıldı!"); document.getElementById('grade-input').value = ''; await loadAllLogs(); };
+        async function deleteAbsence(id) { if (confirm("Silinsin?")) { await manager.deleteAbsenceLog(id); await loadAllLogs(); } }
+        async function deleteGrade(id) { if (confirm("Qiymət silinsin?")) { await manager.deleteGrade(id); await loadAllLogs(); } }
         document.getElementById('btn-migrate-students').onclick = async () => { if (confirm("Miqrasiya?")) { await manager.migrateStudents(staticStudents, currentGroupId); alert("Hazır!"); await loadStudents(); } };
         document.getElementById('btn-migrate-absences').onclick = async () => { if (confirm("Qayıblar bərpa edilsin?")) { const c = await manager.migrateOldAbsences(); alert(`${c} qayıb bərpa edildi.`); } };
         document.querySelectorAll('.tab-btn').forEach(b => { b.addEventListener('click', () => { document.querySelectorAll('.tab-btn').forEach(x => x.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active')); b.classList.add('active'); document.getElementById(b.dataset.tab).classList.add('active'); }); });
