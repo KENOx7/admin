@@ -368,10 +368,8 @@
         async function loadStudents() {
             studentSelect.innerHTML = '<option value="">Tələbə Seçin...</option>';
             studentSelectGrade.innerHTML = '<option value="">Tələbə Seçin...</option>';
-            const dbS = await manager.getAllStudents(currentGroupId);
-            // staticStudents sırasını qoru, DB-də əlavə tələbə varsa sona əlave et
+            // Yalnız rəsmi təsdiqlənmiş tələbə siyahısından istifadə et
             const studentList = [...staticStudents];
-            dbS.forEach(s => { if (!studentList.includes(s)) studentList.push(s); });
             studentList.forEach(s => { studentSelect.innerHTML += `<option value="${s}">${s}</option>`; studentSelectGrade.innerHTML += `<option value="${s}">${s}</option>`; });
             const _csT = document.getElementById('student-select-colloquium');
             if (_csT) { _csT.innerHTML = '<option value="">Tələbə Seçin...</option>'; studentList.forEach(s => _csT.innerHTML += `<option value="${s}">${s}</option>`); }
@@ -387,7 +385,7 @@
                 snapshot.forEach(doc => {
                     const data = doc.data();
                     if (data.groupId && data.groupId !== currentGroupId) return;
-                    if (!data.groupId && !validStudents.has(data.studentName)) return;
+                    if (!validStudents.has(data.studentName)) return;
                     hasData = true;
                     const el = document.createElement('div');
                     el.className = 'flex justify-between items-center bg-gray-800 p-3 rounded border border-gray-700';
@@ -407,7 +405,7 @@
                 snapshot.forEach(doc => {
                     const data = doc.data();
                     if (data.groupId && data.groupId !== currentGroupId) return;
-                    if (!data.groupId && !validStudents.has(data.studentName)) return;
+                    if (!validStudents.has(data.studentName)) return;
                     hasData = true;
                     const el = document.createElement('div');
                     el.className = 'flex justify-between items-center bg-gray-800 p-3 rounded border border-gray-700';
@@ -423,10 +421,13 @@
                 const collList = document.getElementById('colloquiums-list');
                 if (!collList) return;
                 collList.innerHTML = '';
+                const validStudents = new Set();
+                for (let opt of studentSelect.options) { if (opt.value) validStudents.add(opt.value); }
                 let hasCollData = false;
                 snapshot.forEach(docSnap => {
                     const data = docSnap.data();
                     if (data.groupId && data.groupId !== currentGroupId) return;
+                    if (!validStudents.has(data.studentName)) return;
                     hasCollData = true;
                     const el = document.createElement('div');
                     el.className = 'flex justify-between items-center bg-gray-800 p-3 rounded border border-gray-700';
