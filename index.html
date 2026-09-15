@@ -213,6 +213,7 @@
                         <select id="schedule-type" class="p-3 bg-gray-700 border border-gray-600 rounded-lg text-white">
                             <option value="mühazirə">Mühazirə</option>
                             <option value="seminar">Seminar</option>
+                            <option value="laboratoriya">Laboratoriya</option>
                         </select>
                         <input type="text" id="schedule-teacher" placeholder="Müəllim..."
                             class="p-3 bg-gray-700 border border-gray-600 rounded-lg text-white">
@@ -458,7 +459,8 @@
                 let s = "1", rem = ls;
                 if (ls.startsWith('{')) { const e = ls.indexOf('}'); s = ls.substring(1, e); rem = ls.substring(e + 1).trim(); }
                 const ds = rem.split(" - "), lP = ds[0], rP = ds[1], tM = lP.match(/\(([^)]+)\)$/), ty = tM ? tM[1] : "", sub = lP.replace(` (${ty})`, "").trim(), lPS = rP.lastIndexOf(" ("), tea = rP.substring(0, lPS).trim(), loc = rP.substring(lPS + 2, rP.length - 1), rM = loc.match(/Otaq (.+)$/), room = rM ? rM[1] : "";
-                document.getElementById('schedule-week-type').value = w; document.getElementById('schedule-day').value = d; document.getElementById('schedule-slot').value = s; document.getElementById('schedule-subject').value = sub; document.getElementById('schedule-type').value = ty; document.getElementById('schedule-teacher').value = tea; document.getElementById('schedule-room').value = room;
+                const normTy = ty.toLowerCase().startsWith('lab') ? 'laboratoriya' : ty.toLowerCase();
+                document.getElementById('schedule-week-type').value = w; document.getElementById('schedule-day').value = d; document.getElementById('schedule-slot').value = s; document.getElementById('schedule-subject').value = sub; document.getElementById('schedule-type').value = normTy; document.getElementById('schedule-teacher').value = tea; document.getElementById('schedule-room').value = room;
                 const b = document.getElementById('btn-add-schedule'); b.textContent = "Dəyişikliyi Yadda Saxla"; b.classList.remove('bg-green-600', 'bg-blue-600'); b.classList.add('bg-blue-600');
                 let c = document.getElementById('btn-cancel-edit'); if (!c) { c = document.createElement('button'); c.id = 'btn-cancel-edit'; c.textContent = "Ləğv et"; c.className = "bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded transition-colors ml-2"; c.onclick = cancelEditLesson; b.parentNode.appendChild(c); } c.classList.remove('hidden');
                 document.getElementById('schedule-week-type').scrollIntoView({ behavior: 'smooth', block: 'center' });
