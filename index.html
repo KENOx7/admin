@@ -10,576 +10,1598 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <style>
         body {
-            font-family: 'Inter', sans-serif
+            font-family: 'Inter', sans-serif;
         }
 
         .tab-content {
-            display: none
+            display: none;
         }
 
         .tab-content.active {
-            display: block
+            display: block;
         }
 
         .tab-btn.active {
             background-color: #2563eb;
-            color: #fff
+            color: #fff;
+            border-color: #3b82f6;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1f2937;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+
+        /* Toast animation */
+        @keyframes toastIn {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes toastOut {
+            from { transform: translateY(0); opacity: 1; }
+            to { transform: translateY(100%); opacity: 0; }
+        }
+        .toast-enter { animation: toastIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .toast-exit { animation: toastOut 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        /* Hide scrollbars for clean mobile tab sliding */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
     </style>
 </head>
 
-<body class="bg-gray-900 text-gray-200 antialiased font-sans">
+<body class="bg-gray-900 text-gray-200 antialiased font-sans min-h-screen">
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+    <!-- LOGIN SCREEN -->
     <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gray-900 p-4">
         <div class="bg-gray-800 p-8 rounded-2xl shadow-2xl border border-gray-700 w-full max-w-sm text-center">
-            <h2 class="text-3xl font-bold mb-6 text-gray-200">Admin Girişi</h2>
+            <div class="w-16 h-16 bg-blue-600/20 text-blue-400 border border-blue-500/30 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">
+                <i class="ph ph-lock-key"></i>
+            </div>
+            <h2 class="text-2xl font-bold mb-2 text-gray-100">Admin Girişi</h2>
+            <p class="text-sm text-gray-400 mb-6">758/ITS qrupunun idarəetmə paneli</p>
             <input type="password" id="password"
-                class="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-gray-200 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
-                placeholder="Şifrəni daxil edin">
+                class="w-full px-4 py-3 bg-gray-700 border border-gray-600 text-gray-200 rounded-xl mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400 text-sm transition"
+                placeholder="Şifrəni daxil edin" autocomplete="current-password">
             <button id="login-button"
-                class="w-full bg-blue-600 text-white py-3 rounded-full hover:bg-blue-700 transition duration-300 font-semibold text-lg shadow-md hover:scale-105">Daxil
-                Ol</button>
-            <p id="login-error" class="text-red-400 mt-4 text-sm hidden">Yanlış şifrə!</p>
+                class="w-full bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-500 transition duration-200 font-semibold text-base shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2">
+                <span>Daxil Ol</span>
+                <i class="ph ph-arrow-right font-bold"></i>
+            </button>
+            <p id="login-error" class="text-red-400 mt-4 text-sm hidden font-medium flex items-center justify-center gap-1.5">
+                <i class="ph ph-warning-circle text-base"></i>
+                <span>Yanlış şifrə!</span>
+            </p>
         </div>
     </div>
-    <div id="admin-panel" class="container mx-auto p-4 sm:p-6 hidden">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
-                İdarəetmə Paneli</h1>
-            <button id="logout-button"
-                class="bg-red-600 px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm text-white font-bold">Çıxış</button>
-        </div>
-        <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 mb-6 flex justify-between items-center">
-            <div>
-                <p class="text-gray-400 text-sm">Aktiv Semestr</p>
-                <h2 id="active-semester-display" class="text-xl font-bold text-white">Yüklənir...</h2>
+
+    <!-- ADMIN PANEL -->
+    <div id="admin-panel" class="container mx-auto p-3 sm:p-6 hidden max-w-7xl">
+        <!-- Top Header -->
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3.5 mb-5 bg-gray-800/90 p-3.5 sm:p-4 rounded-2xl border border-gray-700/80 shadow-md">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xl shadow-md flex-shrink-0">
+                    <i class="ph ph-shield-check"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg sm:text-2xl font-bold text-white tracking-tight leading-tight">İdarəetmə Paneli</h1>
+                    <div class="flex items-center gap-1.5 text-xs text-gray-400">
+                        <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span>Qrup: <strong class="text-blue-400 font-semibold">758/ITS</strong></span>
+                    </div>
+                </div>
             </div>
-            <div class="text-right">
-                <p class="text-gray-400 text-sm">Qrup</p>
-                <h2 class="text-xl font-bold text-blue-400">758/ITS</h2>
+            <div class="flex items-center gap-2.5 pt-2.5 sm:pt-0 border-t sm:border-t-0 border-gray-700/60">
+                <div class="bg-gray-900/90 px-3.5 py-2 rounded-xl border border-gray-700/80 flex-1 sm:flex-initial sm:min-w-[140px] text-left sm:text-right">
+                    <p class="text-[10px] text-gray-400 uppercase tracking-wider font-semibold leading-tight">Aktiv Semestr</p>
+                    <h2 id="active-semester-display" class="text-xs sm:text-sm font-bold text-white truncate">Yüklənir...</h2>
+                </div>
+                <button id="logout-button"
+                    class="bg-red-500/15 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 px-4 py-2 rounded-xl transition text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 flex-shrink-0 h-[46px]">
+                    <i class="ph ph-sign-out text-base"></i>
+                    <span>Çıxış</span>
+                </button>
             </div>
         </div>
-        <div class="flex space-x-2 mb-6 overflow-x-auto pb-2">
-            <button
-                class="tab-btn active px-4 py-2 rounded-lg bg-gray-800 text-gray-400 hover:bg-gray-700 transition whitespace-nowrap"
-                data-tab="tab-absences">Qayıblar</button>
-            <button
-                class="tab-btn px-4 py-2 rounded-lg bg-gray-800 text-gray-400 hover:bg-gray-700 transition whitespace-nowrap"
-                data-tab="tab-grades">Qiymətlər</button>
-            <button
-                class="tab-btn px-4 py-2 rounded-lg bg-gray-800 text-gray-400 hover:bg-gray-700 transition whitespace-nowrap"
-                data-tab="tab-schedule">Dərs Cədvəli</button>
-            <button
-                class="tab-btn px-4 py-2 rounded-lg bg-gray-800 text-gray-400 hover:bg-gray-700 transition whitespace-nowrap"
-                data-tab="tab-subjects">Fənlər</button>
-            <button
-                class="tab-btn px-4 py-2 rounded-lg bg-gray-800 text-gray-400 hover:bg-gray-700 transition whitespace-nowrap"
-                data-tab="tab-semester">Semestr</button>
-            <button
-                class="tab-btn px-4 py-2 rounded-lg bg-gray-800 text-gray-400 hover:bg-gray-700 transition whitespace-nowrap"
-                data-tab="tab-settings">Tənzimləmələr</button>
+
+        <!-- Navigation Tabs -->
+        <div class="flex space-x-2 mb-5 overflow-x-auto pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 no-scrollbar">
+            <button class="tab-btn active px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700 transition whitespace-nowrap text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2 flex-shrink-0"
+                data-tab="tab-absences">
+                <i class="ph ph-user-minus text-base"></i>
+                <span>Qayıblar</span>
+            </button>
+            <button class="tab-btn px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700 transition whitespace-nowrap text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2 flex-shrink-0"
+                data-tab="tab-grades">
+                <i class="ph ph-graduation-cap text-base"></i>
+                <span>Qiymətlər</span>
+            </button>
+            <button class="tab-btn px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700 transition whitespace-nowrap text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2 flex-shrink-0"
+                data-tab="tab-schedule">
+                <i class="ph ph-calendar text-base"></i>
+                <span>Dərs Cədvəli</span>
+            </button>
+            <button class="tab-btn px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700 transition whitespace-nowrap text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2 flex-shrink-0"
+                data-tab="tab-subjects">
+                <i class="ph ph-books text-base"></i>
+                <span>Fənlər</span>
+            </button>
+            <button class="tab-btn px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700 transition whitespace-nowrap text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2 flex-shrink-0"
+                data-tab="tab-semester">
+                <i class="ph ph-clock-counter-clockwise text-base"></i>
+                <span>Semestr</span>
+            </button>
+            <button class="tab-btn px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700 transition whitespace-nowrap text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2 flex-shrink-0"
+                data-tab="tab-settings">
+                <i class="ph ph-gear text-base"></i>
+                <span>Tənzimləmələr</span>
+            </button>
         </div>
+
+        <!-- ==================== TAB 1: QAYIBLAR ==================== -->
         <div id="tab-absences" class="tab-content active space-y-6">
             <div class="grid lg:grid-cols-2 gap-6">
-                <div class="bg-gray-900 p-6 rounded-xl border border-gray-700">
-                    <h3 class="text-xl font-bold mb-4">Qayıb Əlavə Et</h3>
+                <!-- Add Absence Form -->
+                <div class="bg-gray-800 p-4 sm:p-6 rounded-2xl border border-gray-700 shadow-md">
+                    <h3 class="text-lg font-bold mb-4 text-white flex items-center gap-2">
+                        <i class="ph ph-user-minus text-green-400 text-xl"></i>
+                        <span>Qayıb Əlavə Et</span>
+                    </h3>
                     <div class="space-y-4">
-                        <select id="student-select"
-                            class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white">
-                            <option value="">Tələbə Seçin...</option>
-                        </select>
-                        <select id="subject-select-absence"
-                            class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white">
-                            <option value="">Fənn Seçin...</option>
-                        </select>
-                        <input type="date" id="date-input"
-                            class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Tələbə</label>
+                            <select id="student-select"
+                                class="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 text-white text-sm">
+                                <option value="">Tələbə Seçin...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Fənn</label>
+                            <select id="subject-select-absence"
+                                class="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 text-white text-sm">
+                                <option value="">Fənn Seçin...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Tarix</label>
+                            <input type="date" id="date-input"
+                                class="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 text-white text-sm">
+                        </div>
                         <button id="btn-add-absence"
-                            class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-bold transition">Yadda
-                            Saxla</button>
+                            class="w-full bg-green-600 hover:bg-green-500 text-white py-3 rounded-xl font-bold transition shadow-lg shadow-green-600/20 flex items-center justify-center gap-2 mt-2">
+                            <i class="ph ph-check-circle text-lg"></i>
+                            <span>Yadda Saxla</span>
+                        </button>
                     </div>
                 </div>
-                <div class="bg-gray-900 p-6 rounded-xl border border-gray-700">
-                    <h3 class="text-xl font-bold mb-4">Son Qayıblar</h3>
-                    <div id="absences-list" class="space-y-3 max-h-[400px] overflow-y-auto pr-2"></div>
+
+                <!-- Absences List -->
+                <div class="bg-gray-800 p-4 sm:p-6 rounded-2xl border border-gray-700 shadow-md flex flex-col">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="ph ph-list-dashes text-blue-400 text-xl"></i>
+                            <span>Son Qayıblar</span>
+                            <span id="absences-count-badge" class="text-xs bg-gray-700 px-2 py-0.5 rounded-full text-gray-300 font-mono">0</span>
+                        </h3>
+                        <button id="btn-refresh-absences" title="Yenilə" class="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-700 transition">
+                            <i class="ph ph-arrow-clockwise text-lg"></i>
+                        </button>
+                    </div>
+                    <div class="mb-3">
+                        <div class="relative">
+                            <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                            <input type="text" id="search-absences" placeholder="Tələbə və ya fənn axtar..."
+                                class="w-full pl-9 pr-3 py-2 bg-gray-700/70 border border-gray-600/80 rounded-xl text-xs text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <div id="absences-list" class="space-y-2.5 max-h-[420px] overflow-y-auto pr-1 flex-1">
+                        <p class="text-gray-500 text-sm py-4 text-center">Yüklənir...</p>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <!-- ==================== TAB 2: QİYMƏTLƏR ==================== -->
         <div id="tab-grades" class="tab-content space-y-6">
+            <!-- 1. Tək Qiymət Əlavə Et -->
             <div class="grid lg:grid-cols-2 gap-6">
-                <div class="bg-gray-900 p-6 rounded-xl border border-gray-700">
-                    <h3 class="text-xl font-bold mb-4">Qiymət Əlavə Et</h3>
+                <div class="bg-gray-800 p-4 sm:p-6 rounded-2xl border border-gray-700 shadow-md">
+                    <h3 class="text-lg font-bold mb-4 text-white flex items-center gap-2">
+                        <i class="ph ph-star text-blue-400 text-xl"></i>
+                        <span>Gündəlik Qiymət Əlavə Et</span>
+                    </h3>
                     <div class="space-y-4">
-                        <select id="student-select-grade"
-                            class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white">
-                            <option value="">Tələbə Seçin...</option>
-                        </select>
-                        <select id="subject-select-grade"
-                            class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white">
-                            <option value="">Fənn Seçin...</option>
-                        </select>
-                        <input type="number" id="grade-input" placeholder="Qiymət (məs: 5, 10, ...)" step="0.1" min="0"
-                            max="100"
-                            class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Tələbə</label>
+                            <select id="student-select-grade"
+                                class="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-white text-sm">
+                                <option value="">Tələbə Seçin...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Fənn</label>
+                            <select id="subject-select-grade"
+                                class="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-white text-sm">
+                                <option value="">Fənn Seçin...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Qiymət</label>
+                            <input type="number" id="grade-input" placeholder="Qiymət (məs: 5, 8.5, 10...)" step="0.1" min="0" max="100"
+                                class="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-white text-sm">
+                        </div>
                         <button id="btn-add-grade"
-                            class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-bold transition">Əlavə
-                            Et</button>
+                            class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold transition shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 mt-2">
+                            <i class="ph ph-plus-circle text-lg"></i>
+                            <span>Əlavə Et</span>
+                        </button>
                     </div>
                 </div>
-                <div class="bg-gray-900 p-6 rounded-xl border border-gray-700">
-                    <h3 class="text-xl font-bold mb-4">Mövcud Qiymətlər</h3>
-                    <div id="grades-list" class="space-y-3 max-h-[400px] overflow-y-auto pr-2"></div>
+
+                <div class="bg-gray-800 p-4 sm:p-6 rounded-2xl border border-gray-700 shadow-md flex flex-col">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="ph ph-list-numbers text-blue-400 text-xl"></i>
+                            <span>Son Qiymətlər</span>
+                            <span id="grades-count-badge" class="text-xs bg-gray-700 px-2 py-0.5 rounded-full text-gray-300 font-mono">0</span>
+                        </h3>
+                        <button id="btn-refresh-grades" title="Yenilə" class="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-700 transition">
+                            <i class="ph ph-arrow-clockwise text-lg"></i>
+                        </button>
+                    </div>
+                    <div class="mb-3">
+                        <div class="relative">
+                            <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                            <input type="text" id="search-grades" placeholder="Tələbə və ya fənn axtar..."
+                                class="w-full pl-9 pr-3 py-2 bg-gray-700/70 border border-gray-600/80 rounded-xl text-xs text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <div id="grades-list" class="space-y-2.5 max-h-[360px] overflow-y-auto pr-1 flex-1">
+                        <p class="text-gray-500 text-sm py-4 text-center">Yüklənir...</p>
+                    </div>
                 </div>
             </div>
-            <!-- Kollekvium Bölməsi -->
+
+            <!-- 2. Kollekvium Bölməsi -->
             <div class="grid lg:grid-cols-2 gap-6">
-                <div class="bg-gray-900 p-6 rounded-xl border border-gray-700 border-l-4 border-l-teal-500">
-                    <h3 class="text-xl font-bold mb-4 text-teal-400">Kollekvium Balı Əlavə Et</h3>
+                <div class="bg-gray-800 p-4 sm:p-6 rounded-2xl border border-gray-700 border-l-4 border-l-teal-500 shadow-md">
+                    <h3 class="text-lg font-bold mb-4 text-teal-400 flex items-center gap-2">
+                        <i class="ph ph-exam text-xl"></i>
+                        <span>Kollekvium Balı Əlavə Et</span>
+                    </h3>
                     <div class="space-y-4">
-                        <select id="student-select-colloquium"
-                            class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-white">
-                            <option value="">Tələbə Seçin...</option>
-                        </select>
-                        <select id="subject-select-colloquium"
-                            class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-white">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Tələbə</label>
+                            <select id="student-select-colloquium"
+                                class="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 text-white text-sm">
+                                <option value="">Tələbə Seçin...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Fənn</label>
+                            <select id="subject-select-colloquium"
+                                class="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 text-white text-sm">
+                                <option value="">Fənn Seçin...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Bal (0 - 30)</label>
+                            <input type="number" id="colloquium-input" placeholder="Kollekvium Balı (məs: 18)" step="0.1" min="0" max="30"
+                                class="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 text-white text-sm">
+                        </div>
+                        <button id="btn-add-colloquium"
+                            class="w-full bg-teal-600 hover:bg-teal-500 text-white py-3 rounded-xl font-bold transition shadow-lg shadow-teal-600/20 flex items-center justify-center gap-2 mt-2">
+                            <i class="ph ph-check-circle text-lg"></i>
+                            <span>Əlavə Et</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-gray-800 p-4 sm:p-6 rounded-2xl border border-gray-700 shadow-md flex flex-col">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="ph ph-award text-teal-400 text-xl"></i>
+                            <span>Mövcud Kollekviumlar</span>
+                            <span id="colloquiums-count-badge" class="text-xs bg-gray-700 px-2 py-0.5 rounded-full text-gray-300 font-mono">0</span>
+                        </h3>
+                        <button id="btn-refresh-colloquiums" title="Yenilə" class="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-700 transition">
+                            <i class="ph ph-arrow-clockwise text-lg"></i>
+                        </button>
+                    </div>
+                    <div class="mb-3">
+                        <div class="relative">
+                            <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                            <input type="text" id="search-colloquiums" placeholder="Tələbə və ya fənn axtar..."
+                                class="w-full pl-9 pr-3 py-2 bg-gray-700/70 border border-gray-600/80 rounded-xl text-xs text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                        </div>
+                    </div>
+                    <div id="colloquiums-list" class="space-y-2.5 max-h-[360px] overflow-y-auto pr-1 flex-1">
+                        <p class="text-gray-500 text-sm py-4 text-center">Yüklənir...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Toplu Qiymət Daxiletmə -->
+            <div class="bg-gray-800 p-4 sm:p-6 rounded-2xl border border-gray-700 border-l-4 border-l-purple-500 shadow-md">
+                <div class="flex items-center gap-2.5 mb-2">
+                    <i class="ph ph-table text-purple-400 text-2xl"></i>
+                    <h3 class="text-lg font-bold text-purple-300">Toplu Qiymət / Kollekvium Daxiletmə</h3>
+                </div>
+                <p class="text-gray-400 text-xs mb-4">Fənn və növ seçin. Tələbələrin siyahısı rəsmi sıra ilə açılacaq. Balları daxil edin (Enter düyməsi birbaşa növbəti tələbəyə keçirir).</p>
+
+                <div class="grid md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-400 mb-1.5">Fənn</label>
+                        <select id="ocr-subject-select"
+                            class="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-white text-sm">
                             <option value="">Fənn Seçin...</option>
                         </select>
-                        <input type="number" id="colloquium-input" placeholder="Kollekvium Balı (məs: 18)" step="0.1" min="0" max="30"
-                            class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 text-white">
-                        <button id="btn-add-colloquium"
-                            class="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-lg font-bold transition">Əlavə Et</button>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-400 mb-1.5">Qiymət Növü</label>
+                        <select id="ocr-grade-type"
+                            class="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-white text-sm">
+                            <option value="colloquium">Kollekvium Balı (0 - 30)</option>
+                            <option value="regular">Gündəlik Qiymət (0 - 100)</option>
+                        </select>
                     </div>
                 </div>
-                <div class="bg-gray-900 p-6 rounded-xl border border-gray-700">
-                    <h3 class="text-xl font-bold mb-4">Mövcud Kollekviumlar</h3>
-                    <div id="colloquiums-list" class="space-y-3 max-h-[400px] overflow-y-auto pr-2"></div>
-                </div>
-            </div>
-            <!-- Toplu Qiymət Daxiletmə -->
-            <div class="bg-gray-900 p-6 rounded-xl border border-gray-700 border-l-4 border-l-purple-500">
-                <h3 class="text-xl font-bold mb-4 text-purple-400">📋 Toplu Qiymət Yaz</h3>
-                <p class="text-gray-400 text-sm mb-4">Fənn və tip seçin — tələbələr universitetin sırası ilə göstəriləcək. Balları yazıb bir kliklə hamısını saxlayın.</p>
-                <div class="grid md:grid-cols-2 gap-4 mb-4">
-                    <select id="ocr-subject-select"
-                        class="p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-white">
-                        <option value="">Fənn Seçin...</option>
-                    </select>
-                    <select id="ocr-grade-type"
-                        class="p-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-white">
-                        <option value="colloquium">Kollekvium Balı</option>
-                        <option value="regular">Adi Qiymət</option>
-                    </select>
-                </div>
-                <div id="bulk-entry-container" class="hidden">
-                    <h4 class="font-bold mb-3 text-white">Balları daxil edin (Enter — növbəti tələbə):</h4>
-                    <div id="ocr-results-table" class="space-y-2 max-h-[600px] overflow-y-auto pr-1"></div>
-                    <button id="btn-ocr-save" class="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-bold transition mt-4">Hamısını Yadda Saxla</button>
+
+                <div id="bulk-entry-container" class="hidden mt-4 border-t border-gray-700 pt-4">
+                    <div class="flex justify-between items-center mb-3">
+                        <h4 class="font-bold text-sm text-white flex items-center gap-2">
+                            <span>Balları daxil edin:</span>
+                            <span class="text-xs text-gray-400 font-normal">(Boş qalanlar yazılmayacaq)</span>
+                        </h4>
+                        <button type="button" id="btn-clear-bulk" class="text-xs text-red-400 hover:text-red-300">Xanaları təmizlə</button>
+                    </div>
+                    <div id="ocr-results-table" class="space-y-2 max-h-[500px] overflow-y-auto pr-1"></div>
+                    <button id="btn-ocr-save"
+                        class="w-full bg-purple-600 hover:bg-purple-500 text-white py-3 rounded-xl font-bold transition shadow-lg shadow-purple-600/20 flex items-center justify-center gap-2 mt-4">
+                        <i class="ph ph-floppy-disk text-lg"></i>
+                        <span>Hamısını Yadda Saxla</span>
+                    </button>
                 </div>
             </div>
         </div>
+
+        <!-- ==================== TAB 3: DƏRS CƏDVƏLİ ==================== -->
         <div id="tab-schedule" class="tab-content space-y-6">
-            <div class="bg-gray-900 p-6 rounded-xl border border-gray-700">
-                <h3 class="text-xl font-bold mb-4">Cədvələ Dərs Əlavə Et</h3>
+            <div class="bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-md">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="schedule-form-title" class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="ph ph-calendar-plus text-blue-400 text-xl"></i>
+                        <span>Cədvələ Dərs Əlavə Et</span>
+                    </h3>
+                </div>
                 <div class="grid md:grid-cols-2 gap-4 mb-4">
-                    <select id="schedule-week-type"
-                        class="p-3 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                        <option value="both">Hər İkisi (ALT və ÜST)</option>
-                        <option value="alt">ALT Həftə</option>
-                        <option value="ust">ÜST Həftə</option>
-                    </select>
-                    <select id="schedule-day" class="p-3 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                        <option value="1">1. Bazar ertəsi</option>
-                        <option value="2">2. Çərşənbə axşamı</option>
-                        <option value="3">3. Çərşənbə</option>
-                        <option value="4">4. Cümə axşamı</option>
-                        <option value="5">5. Cümə</option>
-                    </select>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-400 mb-1.5">Həftə Tipi</label>
+                        <select id="schedule-week-type" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option value="both">Hər İkisi (ALT və ÜST)</option>
+                            <option value="alt">Yalnız ALT Həftə</option>
+                            <option value="ust">Yalnız ÜST Həftə</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-400 mb-1.5">Həftənin Günü</label>
+                        <select id="schedule-day" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option value="1">1. Bazar ertəsi</option>
+                            <option value="2">2. Çərşənbə axşamı</option>
+                            <option value="3">3. Çərşənbə</option>
+                            <option value="4">4. Cümə axşamı</option>
+                            <option value="5">5. Cümə</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="space-y-4 mb-4">
                     <div class="grid md:grid-cols-3 gap-4">
-                        <select id="schedule-slot" class="p-3 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                            <option value="1">1-ci cüt (08:00-09:20)</option>
-                            <option value="2">2-ci cüt (09:35-10:55)</option>
-                            <option value="3">3-cü cüt (11:10-12:30)</option>
-                            <option value="4">4-cü cüt (12:45-14:05)</option>
-                            <option value="5">5-ci cüt (14:20-15:40)</option>
-                            <option value="6">6-cı cüt (15:55-17:15)</option>
-                        </select>
-                        <select id="schedule-subject"
-                            class="md:col-span-2 p-3 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                            <option value="">Fənn Seçin...</option>
-                        </select>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Dərs Saati (Cüt)</label>
+                            <select id="schedule-slot" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                <option value="1">1-ci cüt (08:00-09:20)</option>
+                                <option value="2">2-ci cüt (09:35-10:55)</option>
+                                <option value="3">3-cü cüt (11:10-12:30)</option>
+                                <option value="4">4-cü cüt (12:45-14:05)</option>
+                                <option value="5">5-ci cüt (14:20-15:40)</option>
+                                <option value="6">6-cı cüt (15:55-17:15)</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Fənn</label>
+                            <select id="schedule-subject" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                <option value="">Fənn Seçin...</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="grid md:grid-cols-3 gap-4">
-                        <select id="schedule-type" class="p-3 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                            <option value="mühazirə">Mühazirə</option>
-                            <option value="seminar">Seminar</option>
-                            <option value="laboratoriya">Laboratoriya</option>
-                        </select>
-                        <input type="text" id="schedule-teacher" placeholder="Müəllim..."
-                            class="p-3 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                        <input type="text" id="schedule-room" placeholder="Otaq..."
-                            class="p-3 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Dərsin Növü</label>
+                            <select id="schedule-type" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                <option value="mühazirə">Mühazirə</option>
+                                <option value="seminar">Seminar</option>
+                                <option value="laboratoriya">Laboratoriya</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Müəllim</label>
+                            <input type="text" id="schedule-teacher" placeholder="Məs: Kazımov Ramin"
+                                class="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-400 mb-1.5">Otaq</label>
+                            <input type="text" id="schedule-room" placeholder="Məs: 508 və ya 02KM"
+                                class="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
                     </div>
                 </div>
-                <button id="btn-add-schedule"
-                    class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-bold transition">Cədvələ
-                    Əlavə Et</button>
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 mt-2">
+                    <button id="btn-add-schedule"
+                        class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 px-4 rounded-xl font-bold transition shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 text-sm sm:text-base">
+                        <i class="ph ph-plus-circle text-lg"></i>
+                        <span>Cədvələ Əlavə Et</span>
+                    </button>
+                    <button id="btn-cancel-edit" type="button" class="hidden w-full sm:w-auto bg-gray-700 hover:bg-gray-600 text-white py-3 px-6 rounded-xl font-bold transition text-sm flex items-center justify-center gap-1.5 flex-shrink-0">
+                        <i class="ph ph-x text-base"></i>
+                        <span>Ləğv Et</span>
+                    </button>
+                </div>
             </div>
-            <div class="bg-gray-900 p-6 rounded-xl border border-gray-700">
-                <h3 class="text-xl font-bold mb-4">Mövcud Cədvəl (Önizləmə)</h3>
+
+            <!-- Preview Schedule -->
+            <div class="bg-gray-800 p-4 sm:p-6 rounded-2xl border border-gray-700 shadow-md">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                        <i class="ph ph-table text-green-400 text-xl"></i>
+                        <span>Mövcud Cədvəl (Önizləmə)</span>
+                    </h3>
+                    <button id="btn-refresh-schedule" title="Cədvəli Yenilə" class="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-700 transition">
+                        <i class="ph ph-arrow-clockwise text-lg"></i>
+                    </button>
+                </div>
                 <div id="preview-schedule">
-                    <p class="text-gray-500">Yüklənir...</p>
+                    <p class="text-gray-500 text-sm">Yüklənir...</p>
                 </div>
             </div>
         </div>
+
+        <!-- ==================== TAB 4: FƏNLƏR ==================== -->
         <div id="tab-subjects" class="tab-content space-y-6">
-            <div class="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">
-                <h2 class="text-xl font-bold mb-4 text-blue-300">Fənn Əlavə Et</h2>
-                <div class="flex gap-2">
-                    <input type="text" id="new-subject-name" placeholder="Fənnin adı..."
-                        class="bg-gray-700 text-white rounded p-2 flex-grow focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <input type="number" id="new-subject-limit" placeholder="Limit" value="7" min="1" max="20"
-                        class="bg-gray-700 text-white rounded p-2 w-20 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center">
-                    <button id="btn-add-subject"
-                        class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition-colors">+</button>
+            <div class="bg-gray-800 p-4 sm:p-6 rounded-2xl border border-gray-700 shadow-md">
+                <h3 class="text-base sm:text-lg font-bold mb-4 text-white flex items-center gap-2">
+                    <i class="ph ph-book-open-text text-blue-400 text-xl"></i>
+                    <span>Yeni Fənn Əlavə Et</span>
+                </h3>
+                <div class="flex flex-col sm:flex-row gap-2.5">
+                    <input type="text" id="new-subject-name" placeholder="Fənnin tam adı..."
+                        class="bg-gray-700 text-white rounded-xl p-3 w-full sm:flex-grow border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <input type="number" id="new-subject-limit" placeholder="Limit" value="7" min="1" max="20"
+                            class="bg-gray-700 text-white rounded-xl p-3 w-20 sm:w-24 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-center text-sm font-bold" title="Qayıb Limiti">
+                        <button id="btn-add-subject"
+                            class="flex-1 sm:flex-initial bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-6 rounded-xl transition flex items-center justify-center gap-1.5 shadow-lg shadow-green-600/20 whitespace-nowrap">
+                            <i class="ph ph-plus font-bold text-base"></i>
+                            <span>Əlavə Et</span>
+                        </button>
+                    </div>
                 </div>
             </div>
-            <div class="bg-gray-900 p-6 rounded-xl border border-gray-700">
-                <h3 class="text-xl font-bold mb-4">Aktiv Fənlər</h3>
-                <ul id="subjects-list" class="list-disc list-inside text-gray-300 space-y-2"></ul>
+            <div class="bg-gray-800 p-4 sm:p-6 rounded-2xl border border-gray-700 shadow-md">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                        <i class="ph ph-books text-purple-400 text-xl"></i>
+                        <span>Aktiv Fənlər</span>
+                        <span id="subjects-count-badge" class="text-xs bg-gray-700 px-2 py-0.5 rounded-full text-gray-300 font-mono">0</span>
+                    </h3>
+                </div>
+                <ul id="subjects-list" class="space-y-2">
+                    <li class="text-gray-500 text-sm">Yüklənir...</li>
+                </ul>
             </div>
         </div>
+
+        <!-- ==================== TAB 5: SEMESTR ==================== -->
         <div id="tab-semester" class="tab-content space-y-6">
-            <div class="bg-gray-900 p-6 rounded-xl border border-gray-700 border-l-4 border-l-red-500">
-                <h3 class="text-xl font-bold mb-4 text-red-400">Yeni Semestr Yarat</h3>
-                <p class="text-gray-400 mb-4 text-sm">DİQQƏT: Yeni semestr yaratdıqda, cari aktiv semestr arxivlənəcək.
+            <div class="bg-gray-800 p-4 sm:p-6 rounded-2xl border border-gray-700 border-l-4 border-l-red-500 shadow-md">
+                <div class="flex items-center gap-2.5 mb-2">
+                    <i class="ph ph-warning-octagon text-red-400 text-2xl"></i>
+                    <h3 class="text-base sm:text-lg font-bold text-red-400">Yeni Semestr Yarat və Keç</h3>
+                </div>
+                <p class="text-gray-400 mb-4 text-xs">
+                    DİQQƏT: Yeni semestr yaratdıqda, cari aktiv semestr avtomatik olaraq <strong>arxivlənəcək</strong> və yeni təmiz semestr açılacaq.
                 </p>
-                <div class="flex gap-4">
-                    <input type="text" id="new-semester-name" placeholder="Məs: Payız 2024"
-                        class="flex-grow p-3 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                <div class="flex flex-col sm:flex-row gap-2.5">
+                    <input type="text" id="new-semester-name" placeholder="Məs: 2026-2027 Payız Semestri"
+                        class="flex-grow p-3 bg-gray-700 border border-gray-600 rounded-xl text-white text-sm focus:ring-2 focus:ring-red-500 focus:outline-none">
                     <button id="btn-create-semester"
-                        class="bg-red-600 hover:bg-red-700 text-white px-6 rounded-lg font-bold transition">Yarat və
-                        Aktivləşdir</button>
+                        class="bg-red-600 hover:bg-red-500 text-white px-6 py-3 rounded-xl font-bold transition shadow-lg shadow-red-600/20 flex items-center justify-center gap-2 whitespace-nowrap">
+                        <i class="ph ph-arrow-circle-right text-lg"></i>
+                        <span>Yarat və Aktivləşdir</span>
+                    </button>
                 </div>
             </div>
         </div>
+
+        <!-- ==================== TAB 6: TƏNZİMLƏMƏLƏR ==================== -->
         <div id="tab-settings" class="tab-content space-y-6">
-            <div class="bg-gray-900 p-6 rounded-xl border border-gray-700">
-                <h3 class="text-xl font-bold mb-4 text-yellow-500">Məlumatların Miqrasiyası</h3>
-                <div class="space-y-4">
-                    <div class="p-4 bg-gray-800 rounded border border-gray-600">
-                        <h4 class="font-bold text-white mb-2">1. Tələbələri Köçür</h4>
-                        <p class="text-xs text-gray-400 mb-3">Statik siyahıdakı tələbələri "students" kolleksiyasına
-                            əlavə edər.</p>
+            <div class="bg-gray-800 p-4 sm:p-6 rounded-2xl border border-gray-700 shadow-md">
+                <h3 class="text-lg font-bold mb-4 text-yellow-400 flex items-center gap-2">
+                    <i class="ph ph-database text-xl"></i>
+                    <span>Məlumatların Bərpası və Miqrasiyası</span>
+                </h3>
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div class="p-5 bg-gray-900/80 rounded-xl border border-gray-700 flex flex-col justify-between">
+                        <div>
+                            <h4 class="font-bold text-white text-sm mb-1.5">1. Tələbələri Bazaya Köçür</h4>
+                            <p class="text-xs text-gray-400 mb-4">Statik siyahıdakı 23 tələbəni "students" kolleksiyasına əlavə edər.</p>
+                        </div>
                         <button id="btn-migrate-students"
-                            class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded font-bold transition">Tələbələri
-                            Köçür</button>
+                            class="w-full bg-yellow-600/20 hover:bg-yellow-600 text-yellow-300 hover:text-white border border-yellow-500/40 py-2.5 rounded-xl font-bold text-xs transition">
+                            Tələbələri Köçür
+                        </button>
                     </div>
-                    <div class="p-4 bg-gray-800 rounded border border-gray-600">
-                        <h4 class="font-bold text-white mb-2">2. Köhnə Qayıbları Köçür</h4>
-                        <p class="text-xs text-gray-400 mb-3">Köhnə "qayiblar" kolleksiyasını yeni "absences_log"a əlavə
-                            edər.</p>
+                    <div class="p-5 bg-gray-900/80 rounded-xl border border-gray-700 flex flex-col justify-between">
+                        <div>
+                            <h4 class="font-bold text-white text-sm mb-1.5">2. Köhnə Qayıbları Köçür</h4>
+                            <p class="text-xs text-gray-400 mb-4">Köhnə "qayiblar" kolleksiyasındakı qeydləri yeni "absences_log"a köçürər.</p>
+                        </div>
                         <button id="btn-migrate-absences"
-                            class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded font-bold transition">Qayıbları
-                            Köçür</button>
+                            class="w-full bg-yellow-600/20 hover:bg-yellow-600 text-yellow-300 hover:text-white border border-yellow-500/40 py-2.5 rounded-xl font-bold text-xs transition">
+                            Qayıbları Köçür
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    <div id="edit-subject-modal" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center z-50">
-        <div class="bg-gray-800 p-8 rounded-2xl w-full max-w-md border border-gray-700 shadow-2xl relative">
-            <button onclick="closeEditModal()"
-                class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl">&times;</button>
-            <h3 class="text-2xl font-bold mb-6 text-blue-400">Fənni Redaktə Et</h3>
+
+    <!-- EDIT SUBJECT MODAL -->
+    <div id="edit-subject-modal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 p-4">
+        <div class="bg-gray-800 p-5 sm:p-8 rounded-2xl w-full max-w-md border border-gray-700 shadow-2xl relative">
+            <button onclick="window.closeEditModal()"
+                class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl p-1 rounded-lg hover:bg-gray-700">&times;</button>
+            <h3 class="text-xl font-bold mb-4 text-blue-400 flex items-center gap-2">
+                <i class="ph ph-pencil-simple"></i>
+                <span>Fənni Redaktə Et</span>
+            </h3>
             <input type="hidden" id="edit-subject-original-name">
-            <div class="mb-4"><label class="block text-gray-400 text-sm mb-2">Fənnin Adı</label><input type="text"
-                    id="edit-subject-name"
-                    class="w-full bg-gray-700 border border-gray-600 rounded p-3 text-white focus:outline-none focus:border-blue-500">
+            <div class="mb-4">
+                <label class="block text-gray-400 text-xs font-semibold mb-1.5">Fənnin Adı</label>
+                <input type="text" id="edit-subject-name"
+                    class="w-full bg-gray-700 border border-gray-600 rounded-xl p-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
-            <div class="mb-6"><label class="block text-gray-400 text-sm mb-2">Limit</label><input type="number"
-                    id="edit-subject-limit"
-                    class="w-full bg-gray-700 border border-gray-600 rounded p-3 text-white focus:outline-none focus:border-blue-500">
+            <div class="mb-6">
+                <label class="block text-gray-400 text-xs font-semibold mb-1.5">Qayıb Limiti</label>
+                <input type="number" id="edit-subject-limit" min="1" max="20"
+                    class="w-full bg-gray-700 border border-gray-600 rounded-xl p-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
-            <div class="flex justify-end gap-3"><button onclick="closeEditModal()"
-                    class="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded text-white font-medium transition">Ləğv
-                    et</button><button onclick="saveEditedSubject()"
-                    class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-white font-bold transition">Yadda
-                    Saxla</button></div>
+            <div class="flex justify-end gap-3">
+                <button onclick="window.closeEditModal()"
+                    class="px-4 py-2.5 bg-gray-700 hover:bg-gray-600 rounded-xl text-white text-sm font-medium transition">Ləğv et</button>
+                <button id="btn-save-subject-edit" onclick="window.saveEditedSubject()"
+                    class="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-white text-sm font-bold transition shadow-lg shadow-blue-600/20">Yadda Saxla</button>
+            </div>
         </div>
     </div>
+
+    <!-- MAIN APP SCRIPT -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, onSnapshot, collection, query, orderBy, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, query, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { SystemManager } from "./firestore_manager.js";
-        const firebaseConfig = { apiKey: "AIzaSyAtQ_laoPhn_31RgUFp5hkHPzAcYJSH9_8", authDomain: "davamiyyet-sistemi.firebaseapp.com", projectId: "davamiyyet-sistemi", storageBucket: "davamiyyet-sistemi.appspot.com", messagingSenderId: "773549402059", appId: "1:773549402059:web:25286906aa1d998041f84e", measurementId: "G-M3Y8QZCM8C" };
-        const app = initializeApp(firebaseConfig); const db = getFirestore(app); const auth = getAuth(app); const manager = new SystemManager(db); const currentGroupId = "758_ITS";
-        const loginScreen = document.getElementById('login-screen'), adminPanel = document.getElementById('admin-panel'), activeSemesterDisplay = document.getElementById('active-semester-display'), studentSelect = document.getElementById('student-select'), studentSelectGrade = document.getElementById('student-select-grade'), subjectSelectAbsence = document.getElementById('subject-select-absence'), subjectSelectGrade = document.getElementById('subject-select-grade'), subjectsList = document.getElementById('subjects-list'), absencesList = document.getElementById('absences-list'), gradesList = document.getElementById('grades-list');
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAtQ_laoPhn_31RgUFp5hkHPzAcYJSH9_8",
+            authDomain: "davamiyyet-sistemi.firebaseapp.com",
+            projectId: "davamiyyet-sistemi",
+            storageBucket: "davamiyyet-sistemi.appspot.com",
+            messagingSenderId: "773549402059",
+            appId: "1:773549402059:web:25286906aa1d998041f84e",
+            measurementId: "G-M3Y8QZCM8C"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const manager = new SystemManager(db);
+        const currentGroupId = "758_ITS";
+
+        // Global State
         let activeSemesterId = null;
-        let staticStudents = ["İsayev Ramal Rəfayıl", "Qulamov Kamil Amil", "Abbaszadə Salman Məsud", "Heydərli Heydər Sabir", "Mikayılova Lalə Samir", "Seyidov Nurəli Mirnayıb", "Kübərov Rahid Mahmud", "Bayramov Məmməd Vaqif", "Həsənova Mənzər İlqar", "Rüstəmov Elgün Ceyhun", "Xasayeva Nərmin Azər", "İbalı Cəmilə Rəfail", "Mirzəyeva Nüşabə Hacıəli", "Muradova Leyla Qadir", "Əhmədov Kənan Ceyhun", "Sultanlı Nihad Sərhad", "Əsgərov Elnar Vüsal", "Hüseynli Nərgiz Mütəllim", "Mirişov Nihad Murad", "Ağalizadə Səid Elman", "Hüseynova Firuzə Sənan", "Ağakərimov Fəqan Alim", "Orucov Nurlan Seymur"];
-        document.getElementById('login-button').addEventListener('click', () => { if (document.getElementById('password').value === "admin123") { sessionStorage.setItem('isAdminAuthenticated', 'true'); checkLogin(); } else { document.getElementById('login-error').classList.remove('hidden'); } });
-        document.getElementById('logout-button').addEventListener('click', () => { sessionStorage.removeItem('isAdminAuthenticated'); window.location.reload(); });
-        function checkLogin() { if (sessionStorage.getItem('isAdminAuthenticated') === 'true') { loginScreen.classList.add('hidden'); adminPanel.classList.remove('hidden'); signInAnonymously(auth); } }
+        const staticStudents = [
+            "İsayev Ramal Rəfayıl", "Qulamov Kamil Amil", "Abbaszadə Salman Məsud", "Heydərli Heydər Sabir",
+            "Mikayılova Lalə Samir", "Seyidov Nurəli Mirnayıb", "Kübərov Rahid Mahmud", "Bayramov Məmməd Vaqif",
+            "Həsənova Mənzər İlqar", "Rüstəmov Elgün Ceyhun", "Xasayeva Nərmin Azər", "İbalı Cəmilə Rəfail",
+            "Mirzəyeva Nüşabə Hacıəli", "Muradova Leyla Qadir", "Əhmədov Kənan Ceyhun", "Sultanlı Nihad Sərhad",
+            "Əsgərov Elnar Vüsal", "Hüseynli Nərgiz Mütəllim", "Mirişov Nihad Murad", "Ağalizadə Səid Elman",
+            "Hüseynova Firuzə Sənan", "Ağakərimov Fəqan Alim", "Orucov Nurlan Seymur"
+        ];
+        const validStudents = new Set(staticStudents);
+
+        // Cached lists for live search filtering
+        let cachedAbsences = [];
+        let cachedGrades = [];
+        let cachedColloquiums = [];
+
+        // Safe lesson store for editing/deleting without HTML quote escaping bugs
+        window.lessonStore = {};
+
+        // DOM References
+        const loginScreen = document.getElementById('login-screen');
+        const adminPanel = document.getElementById('admin-panel');
+        const activeSemesterDisplay = document.getElementById('active-semester-display');
+        const studentSelect = document.getElementById('student-select');
+        const studentSelectGrade = document.getElementById('student-select-grade');
+        const subjectSelectAbsence = document.getElementById('subject-select-absence');
+        const subjectSelectGrade = document.getElementById('subject-select-grade');
+        const subjectsList = document.getElementById('subjects-list');
+        const absencesList = document.getElementById('absences-list');
+        const gradesList = document.getElementById('grades-list');
+
+        // --- TOAST NOTIFICATION SYSTEM ---
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            const bgClass = type === 'success' ? 'bg-emerald-600 text-white' : (type === 'error' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white');
+            const icon = type === 'success' ? 'ph-check-circle' : (type === 'error' ? 'ph-warning-circle' : 'ph-info');
+
+            toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-xl text-sm font-semibold toast-enter border border-white/20 ${bgClass}`;
+            toast.innerHTML = `<i class="ph ${icon} text-lg"></i><span>${message}</span>`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('toast-enter');
+                toast.classList.add('toast-exit');
+                setTimeout(() => toast.remove(), 250);
+            }, 3000);
+        }
+
+        // --- HELPER: TIMESTAMP TO MILLISECONDS ---
+        function getTimestampMillis(t) {
+            if (!t) return 0;
+            if (t.seconds !== undefined) return t.seconds * 1000 + ((t.nanoseconds || 0) / 1e6);
+            if (typeof t.toMillis === 'function') return t.toMillis();
+            if (t instanceof Date) return t.getTime();
+            if (typeof t === 'number') return t;
+            return 0;
+        }
+
+        // --- AUTHENTICATION ---
+        function checkLogin() {
+            if (sessionStorage.getItem('isAdminAuthenticated') === 'true') {
+                loginScreen.classList.add('hidden');
+                adminPanel.classList.remove('hidden');
+                signInAnonymously(auth).catch(e => console.warn("Auth warning:", e));
+            }
+        }
+
+        function handleLoginSubmit() {
+            const pwd = document.getElementById('password').value.trim();
+            if (pwd === "admin123") {
+                sessionStorage.setItem('isAdminAuthenticated', 'true');
+                document.getElementById('login-error').classList.add('hidden');
+                checkLogin();
+            } else {
+                document.getElementById('login-error').classList.remove('hidden');
+            }
+        }
+
+        document.getElementById('login-button').addEventListener('click', handleLoginSubmit);
+        document.getElementById('password').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') handleLoginSubmit();
+        });
+
+        document.getElementById('logout-button').addEventListener('click', () => {
+            sessionStorage.removeItem('isAdminAuthenticated');
+            window.location.reload();
+        });
+
         checkLogin();
-        onAuthStateChanged(auth, async (user) => { if (user) { await loadInitialData(); await loadAllLogs(); } });
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user && sessionStorage.getItem('isAdminAuthenticated') === 'true') {
+                await loadInitialData();
+                await loadAllLogs();
+            }
+        });
+
+        // --- INITIAL DATA LOAD ---
         async function loadInitialData() {
             try {
                 const semester = await manager.getActiveSemester();
                 if (semester) {
                     activeSemesterId = semester.id;
                     activeSemesterDisplay.textContent = semester.name;
-                    await loadSubjects();
-                    await loadStudents();
-                    await loadGroupSchedule();
+                    await Promise.all([
+                        loadSubjects(),
+                        loadStudents(),
+                        loadGroupSchedule()
+                    ]);
                 } else {
                     activeSemesterDisplay.textContent = "Aktiv Semestr Yoxdur";
                 }
-                document.getElementById('date-input').value = new Date().toISOString().split('T')[0];
+                const dateInp = document.getElementById('date-input');
+                if (dateInp) dateInp.value = new Date().toISOString().split('T')[0];
             } catch (e) {
-                console.error(e);
-                activeSemesterDisplay.textContent = "Bağlantı Xətası: " + e.message;
+                console.error("Initial data load error:", e);
+                activeSemesterDisplay.textContent = "Bağlantı Xətası";
+                showToast("Xəta: " + e.message, "error");
             }
         }
+
+        // --- SUBJECTS MANAGEMENT ---
         async function loadSubjects() {
             if (!activeSemesterId) return;
-            const result = await manager.getGroupSubjects(activeSemesterId, currentGroupId);
-            const subjects = result.subjects || [], limits = result.limits || {};
-            const subjectSelectSchedule = document.getElementById('schedule-subject');
-            subjectSelectSchedule.innerHTML = '<option value="">Seçin...</option>';
-            subjectSelectAbsence.innerHTML = '<option value="">Fənn seçin...</option>';
-            subjectSelectGrade.innerHTML = '<option value="">Fənn seçin...</option>';
-            subjects.forEach(sub => { subjectSelectSchedule.innerHTML += `<option value="${sub}">${sub}</option>`; subjectSelectAbsence.innerHTML += `<option value="${sub}">${sub}</option>`; subjectSelectGrade.innerHTML += `<option value="${sub}">${sub}</option>`; });
-            const _csS = document.getElementById('subject-select-colloquium'), _osS = document.getElementById('ocr-subject-select');
-            if (_csS) { _csS.innerHTML = '<option value="">Fənn seçin...</option>'; subjects.forEach(sub => _csS.innerHTML += `<option value="${sub}">${sub}</option>`); }
-            if (_osS) { _osS.innerHTML = '<option value="">Fənn seçin...</option>'; subjects.forEach(sub => _osS.innerHTML += `<option value="${sub}">${sub}</option>`); }
-            subjectsList.innerHTML = subjects.map(s => {
-                const limit = limits[s] || 7, safeName = s.replace(/'/g, "\\'");
-                return `<li class="bg-gray-800 p-3 rounded flex justify-between items-center mb-2 border border-gray-700"><div><span class="font-bold text-white">${s}</span><span class="text-xs text-yellow-500 ml-2">(Limit: ${limit})</span></div><div><button onclick="window.editSubject('${safeName}', ${limit})" class="bg-blue-600 hover:bg-blue-500 text-white p-1 rounded mr-2 transition"><i class="ph ph-pencil-simple"></i></button><button onclick="window.deleteSubject('${safeName}')" class="bg-red-600 hover:bg-red-500 text-white p-1 rounded transition"><i class="ph ph-trash"></i></button></div></li>`;
-            }).join('');
+            try {
+                const result = await manager.getGroupSubjects(activeSemesterId, currentGroupId);
+                const subjects = result.subjects || [];
+                const limits = result.limits || {};
+
+                // Update select dropdowns
+                const selects = [
+                    document.getElementById('schedule-subject'),
+                    subjectSelectAbsence,
+                    subjectSelectGrade,
+                    document.getElementById('subject-select-colloquium'),
+                    document.getElementById('ocr-subject-select')
+                ];
+
+                selects.forEach(sel => {
+                    if (!sel) return;
+                    const prevVal = sel.value;
+                    sel.innerHTML = '<option value="">Fənn Seçin...</option>';
+                    subjects.forEach(sub => {
+                        sel.innerHTML += `<option value="${sub}">${sub}</option>`;
+                    });
+                    if (prevVal && subjects.includes(prevVal)) sel.value = prevVal;
+                });
+
+                // Update badge count
+                const badge = document.getElementById('subjects-count-badge');
+                if (badge) badge.textContent = subjects.length;
+
+                // Render subjects list
+                if (subjects.length === 0) {
+                    subjectsList.innerHTML = '<li class="text-gray-500 text-sm py-2">Hələ fənn əlavə edilməyib.</li>';
+                    return;
+                }
+
+                subjectsList.innerHTML = subjects.map(s => {
+                    const lim = limits[s] || 7;
+                    const safeKey = encodeURIComponent(s);
+                    window.lessonStore[`sub_${safeKey}`] = { name: s, limit: lim };
+
+                    return `
+                    <li class="bg-gray-800/90 p-3 sm:p-3.5 rounded-xl flex items-center justify-between gap-2.5 border border-gray-700/80 hover:border-gray-600 transition">
+                        <div class="flex items-center gap-2 min-w-0 flex-1 mr-1">
+                            <span class="font-bold text-white text-xs sm:text-sm leading-snug break-words">${s}</span>
+                            <span class="text-[11px] bg-yellow-500/15 text-yellow-400 border border-yellow-500/30 px-2 py-0.5 rounded-md font-mono font-semibold whitespace-nowrap flex-shrink-0">Limit: ${lim}</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 flex-shrink-0">
+                            <button onclick="window.editSubjectByKey('sub_${safeKey}')" class="bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white p-2 rounded-lg transition" title="Redaktə et">
+                                <i class="ph ph-pencil-simple text-base"></i>
+                            </button>
+                            <button onclick="window.deleteSubjectByKey('sub_${safeKey}')" class="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white p-2 rounded-lg transition" title="Sil">
+                                <i class="ph ph-trash text-base"></i>
+                            </button>
+                        </div>
+                    </li>`;
+                }).join('');
+            } catch (e) {
+                console.error("Subjects load error:", e);
+                showToast("Fənlər yüklənmədi: " + e.message, "error");
+            }
         }
-        window.editSubject = (name, limit) => { const m = document.getElementById('edit-subject-modal'); document.getElementById('edit-subject-original-name').value = name; document.getElementById('edit-subject-name').value = name; document.getElementById('edit-subject-limit').value = limit; m.classList.remove('hidden'); };
-        window.closeEditModal = () => document.getElementById('edit-subject-modal').classList.add('hidden');
-        window.saveEditedSubject = async () => {
-            const o = document.getElementById('edit-subject-original-name').value, n = document.getElementById('edit-subject-name').value, l = document.getElementById('edit-subject-limit').value;
-            if (!n || !l) return alert("Doldurun!");
-            try { await manager.updateSubject(activeSemesterId, currentGroupId, o, n, parseInt(l)); closeEditModal(); await loadSubjects(); } catch (e) { alert("Xəta: " + e); }
+
+        window.editSubjectByKey = (key) => {
+            const data = window.lessonStore[key];
+            if (!data) return;
+            document.getElementById('edit-subject-original-name').value = data.name;
+            document.getElementById('edit-subject-name').value = data.name;
+            document.getElementById('edit-subject-limit').value = data.limit;
+            const modal = document.getElementById('edit-subject-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
         };
-        window.deleteSubject = async (n) => { if (confirm(`${n} silinsin?`)) try { await manager.deleteSubject(activeSemesterId, currentGroupId, n); await loadSubjects(); } catch (e) { alert("Xəta: " + e); } };
+
+        window.closeEditModal = () => {
+            const modal = document.getElementById('edit-subject-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        };
+
+        window.saveEditedSubject = async () => {
+            const o = document.getElementById('edit-subject-original-name').value.trim();
+            const n = document.getElementById('edit-subject-name').value.trim();
+            const l = parseInt(document.getElementById('edit-subject-limit').value, 10);
+            if (!n || isNaN(l)) return showToast("Zəhmət olmasa bütün xanaları doldurun!", "error");
+
+            const btn = document.getElementById('btn-save-subject-edit');
+            btn.disabled = true;
+            btn.textContent = "Saxlanılır...";
+            try {
+                await manager.updateSubject(activeSemesterId, currentGroupId, o, n, l);
+                window.closeEditModal();
+                showToast("Fənn uğurla yeniləndi!");
+                await loadSubjects();
+            } catch (e) {
+                showToast("Xəta: " + e.message, "error");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Yadda Saxla";
+            }
+        };
+
+        window.deleteSubjectByKey = async (key) => {
+            const data = window.lessonStore[key];
+            if (!data) return;
+            if (!confirm(`"${data.name}" fənni silinsin?`)) return;
+
+            try {
+                await manager.deleteSubject(activeSemesterId, currentGroupId, data.name);
+                showToast("Fənn silindi!");
+                await loadSubjects();
+            } catch (e) {
+                showToast("Xəta: " + e.message, "error");
+            }
+        };
+
+        document.getElementById('btn-add-subject').onclick = async () => {
+            const nameInp = document.getElementById('new-subject-name');
+            const limitInp = document.getElementById('new-subject-limit');
+            const n = nameInp.value.trim();
+            const l = parseInt(limitInp.value || "7", 10);
+            if (!n || !activeSemesterId) return showToast("Fənn adını yazın!", "error");
+
+            const btn = document.getElementById('btn-add-subject');
+            btn.disabled = true;
+            try {
+                await manager.addSubjectToGroup(activeSemesterId, currentGroupId, n, l);
+                nameInp.value = '';
+                showToast("Yeni fənn əlavə edildi!");
+                await loadSubjects();
+            } catch (e) {
+                showToast("Xəta: " + e.message, "error");
+            } finally {
+                btn.disabled = false;
+            }
+        };
+
+        // --- STUDENTS MANAGEMENT ---
         async function loadStudents() {
             studentSelect.innerHTML = '<option value="">Tələbə Seçin...</option>';
             studentSelectGrade.innerHTML = '<option value="">Tələbə Seçin...</option>';
-            // Yalnız rəsmi təsdiqlənmiş tələbə siyahısından istifadə et
-            const studentList = [...staticStudents];
-            studentList.forEach(s => { studentSelect.innerHTML += `<option value="${s}">${s}</option>`; studentSelectGrade.innerHTML += `<option value="${s}">${s}</option>`; });
-            const _csT = document.getElementById('student-select-colloquium');
-            if (_csT) { _csT.innerHTML = '<option value="">Tələbə Seçin...</option>'; studentList.forEach(s => _csT.innerHTML += `<option value="${s}">${s}</option>`); }
-        }
-        function setupRealtimeListeners() { /* Replaced by loadAllLogs() to avoid quota */ }
-        async function loadAllLogs() {
-            if (!activeSemesterId) return;
-            const validStudents = new Set(staticStudents);
+            const csT = document.getElementById('student-select-colloquium');
+            if (csT) csT.innerHTML = '<option value="">Tələbə Seçin...</option>';
 
-            // --- Qayıblar ---
+            staticStudents.forEach(s => {
+                studentSelect.innerHTML += `<option value="${s}">${s}</option>`;
+                studentSelectGrade.innerHTML += `<option value="${s}">${s}</option>`;
+                if (csT) csT.innerHTML += `<option value="${s}">${s}</option>`;
+            });
+        }
+
+        // ==========================================
+        // --- ISOLATED LOG LOADERS (SAVES QUOTA) ---
+        // ==========================================
+
+        // 1. QAYIBLAR
+        async function loadAbsences() {
+            if (!activeSemesterId) return;
             try {
                 const q = query(collection(db, "absences_log"), where("semesterId", "==", activeSemesterId), limit(200));
                 const snap = await getDocs(q);
-                absencesList.innerHTML = '';
                 const docs = [];
-                snap.forEach(doc => { const d = doc.data(); if ((!d.groupId || d.groupId === currentGroupId) && validStudents.has(d.studentName)) docs.push({ id: doc.id, ...d }); });
-                docs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-                if (docs.length === 0) { absencesList.innerHTML = '<p class="text-gray-500">Bu semestr üçün qayıb yoxdur.</p>'; }
-                else docs.forEach(data => {
-                    const el = document.createElement('div');
-                    el.className = 'flex justify-between items-center bg-gray-800 p-3 rounded border border-gray-700';
-                    el.innerHTML = `<div><p class="font-bold text-gray-200">${data.studentName}</p><p class="text-xs text-gray-400">${data.subject} | ${data.date}</p></div><button class="delete-btn text-red-500 hover:text-red-400 font-bold px-2">&times;</button>`;
-                    el.querySelector('.delete-btn').onclick = () => deleteAbsence(data.id);
-                    absencesList.appendChild(el);
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    if ((!d.groupId || d.groupId === currentGroupId) && validStudents.has(d.studentName)) {
+                        docs.push({ id: doc.id, ...d });
+                    }
                 });
-            } catch(e) { console.warn('Absences load:', e.message); absencesList.innerHTML = '<p class="text-red-400 text-sm">Xəta: ' + e.message + '</p>'; }
 
-            // --- Qiymətlər ---
-            try {
-                const qG = query(collection(db, "grades_log"), where("semesterId", "==", activeSemesterId), limit(200));
-                const snapG = await getDocs(qG);
-                gradesList.innerHTML = '';
-                const gDocs = [];
-                snapG.forEach(doc => { const d = doc.data(); if ((!d.groupId || d.groupId === currentGroupId) && validStudents.has(d.studentName)) gDocs.push({ id: doc.id, ...d }); });
-                gDocs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-                if (gDocs.length === 0) { gradesList.innerHTML = '<p class="text-gray-500">Bu semestr üçün qiymət yoxdur.</p>'; }
-                else gDocs.forEach(data => {
-                    const el = document.createElement('div');
-                    el.className = 'flex justify-between items-center bg-gray-800 p-3 rounded border border-gray-700';
-                    el.innerHTML = `<div><p class="font-bold text-gray-200">${data.studentName}</p><p class="text-xs text-gray-400">${data.subject} | Qiymət: <strong class="text-blue-400">${data.grade}</strong></p></div><button class="delete-btn text-red-500 hover:text-red-400 font-bold px-2">&times;</button>`;
-                    el.querySelector('.delete-btn').onclick = () => deleteGrade(data.id);
-                    gradesList.appendChild(el);
-                });
-            } catch(e) { console.warn('Grades load:', e.message); gradesList.innerHTML = '<p class="text-red-400 text-sm">Xəta: ' + e.message + '</p>'; }
-
-            // --- Kollekviumlar ---
-            try {
-                const qC = query(collection(db, "colloquium_log"), where("semesterId", "==", activeSemesterId), limit(200));
-                const snapC = await getDocs(qC);
-                const collList = document.getElementById('colloquiums-list');
-                if (collList) {
-                    collList.innerHTML = '';
-                    const cDocs = [];
-                    snapC.forEach(doc => { const d = doc.data(); if ((!d.groupId || d.groupId === currentGroupId) && validStudents.has(d.studentName)) cDocs.push({ id: doc.id, ...d }); });
-                    cDocs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-                    if (cDocs.length === 0) { collList.innerHTML = '<p class="text-gray-500">Bu semestr üçün kollekvium yoxdur.</p>'; }
-                    else cDocs.forEach(data => {
-                        const el = document.createElement('div');
-                        el.className = 'flex justify-between items-center bg-gray-800 p-3 rounded border border-gray-700';
-                        el.innerHTML = `<div><p class="font-bold text-gray-200">${data.studentName}</p><p class="text-xs text-gray-400">${data.subject} | Kollekvium: <strong class="text-teal-400">${data.score}</strong></p></div><button class="delete-btn text-red-500 hover:text-red-400 font-bold px-2">&times;</button>`;
-                        el.querySelector('.delete-btn').onclick = () => { if (confirm('Silinsin?')) manager.deleteColloquium(data.id).then(() => loadAllLogs()); };
-                        collList.appendChild(el);
-                    });
-                }
-            } catch(e) { console.warn('Colloquiums load:', e.message); }
+                docs.sort((a, b) => getTimestampMillis(b.timestamp) - getTimestampMillis(a.timestamp));
+                cachedAbsences = docs;
+                renderAbsencesList();
+            } catch (e) {
+                console.warn("Absences load warning:", e.message);
+                absencesList.innerHTML = `<p class="text-red-400 text-xs py-2">Xəta: ${e.message}</p>`;
+            }
         }
-        document.getElementById('btn-create-semester').onclick = async () => { const n = document.getElementById('new-semester-name').value; if (n && confirm("Yeni semestr?")) { await manager.createSemester(n); window.location.reload(); } };
-        document.getElementById('btn-add-subject').onclick = async () => { const n = document.getElementById('new-subject-name').value, l = document.getElementById('new-subject-limit').value || 7; if (n && activeSemesterId) { try { await manager.addSubjectToGroup(activeSemesterId, currentGroupId, n, l); document.getElementById('new-subject-name').value = ''; await loadSubjects(); await loadStudents(); await loadGroupSchedule(); } catch (e) { alert("Xəta: " + e.message); console.error(e); } } };
-        document.getElementById('btn-add-schedule').onclick = async () => {
-            const wt = document.getElementById('schedule-week-type').value, d = document.getElementById('schedule-day').value, sl = document.getElementById('schedule-slot').value, sub = document.getElementById('schedule-subject').value, ty = document.getElementById('schedule-type').value, t = document.getElementById('schedule-teacher').value, r = document.getElementById('schedule-room').value;
-            if (!sub || !t || !r || !activeSemesterId) return alert("Doldurun!");
-            const times = { "1": "08:00-09:20", "2": "09:35-10:55", "3": "11:10-12:30", "4": "12:45-14:05", "5": "14:20-15:40", "6": "15:55-17:15" };
-            const lStr = `{${sl}} ${sub} (${ty}) - ${t} (${times[sl] || ""}, Otaq ${r})`;
+
+        function renderAbsencesList() {
+            const queryText = (document.getElementById('search-absences')?.value || '').toLowerCase().trim();
+            const filtered = cachedAbsences.filter(d =>
+                !queryText ||
+                (d.studentName && d.studentName.toLowerCase().includes(queryText)) ||
+                (d.subject && d.subject.toLowerCase().includes(queryText)) ||
+                (d.date && d.date.includes(queryText))
+            );
+
+            const badge = document.getElementById('absences-count-badge');
+            if (badge) badge.textContent = filtered.length;
+
+            if (filtered.length === 0) {
+                absencesList.innerHTML = `<p class="text-gray-500 text-sm py-4 text-center">${queryText ? 'Uyğun qayıb tapılmadı.' : 'Bu semestr üçün qayıb yoxdur.'}</p>`;
+                return;
+            }
+
+            absencesList.innerHTML = filtered.map(data => `
+                <div class="flex justify-between items-center bg-gray-900/90 p-3 rounded-xl border border-gray-700/80 hover:border-gray-600 transition">
+                    <div class="min-w-0 flex-1 mr-2">
+                        <p class="font-bold text-gray-200 text-sm truncate">${data.studentName}</p>
+                        <p class="text-xs text-gray-400 truncate">${data.subject} &bull; <span class="text-gray-300 font-mono">${data.date}</span></p>
+                    </div>
+                    <button onclick="window.deleteAbsenceItem('${data.id}')"
+                        class="text-red-400 hover:text-white hover:bg-red-600/30 p-1.5 rounded-lg transition" title="Sil">
+                        <i class="ph ph-trash text-base"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        window.deleteAbsenceItem = async (id) => {
+            if (!confirm("Bu qayıb qeydi silinsin?")) return;
             try {
-                if (window.editingLesson) { await manager.updateLessonInSchedule(activeSemesterId, currentGroupId, window.editingLesson.week, window.editingLesson.day, window.editingLesson.originalString, lStr); cancelEditLesson(); }
-                else { if (wt === 'both') { await manager.addLessonToSchedule(activeSemesterId, currentGroupId, 'alt', d, lStr); await manager.addLessonToSchedule(activeSemesterId, currentGroupId, 'ust', d, lStr); } else { await manager.addLessonToSchedule(activeSemesterId, currentGroupId, wt, d, lStr); } }
-                loadGroupSchedule();
-            } catch (e) { alert("Xəta: " + e.message); }
+                await manager.deleteAbsenceLog(id);
+                showToast("Qayıb silindi!");
+                await loadAbsences();
+            } catch (e) {
+                showToast("Xəta: " + e.message, "error");
+            }
         };
-        window.editingLesson = null;
-        window.startEditLesson = (w, d, ls) => {
-            window.editingLesson = { week: w, day: d, originalString: ls };
-            try {
-                let s = "1", rem = ls;
-                if (ls.startsWith('{')) { const e = ls.indexOf('}'); s = ls.substring(1, e); rem = ls.substring(e + 1).trim(); }
-                const ds = rem.split(" - "), lP = ds[0], rP = ds[1], tM = lP.match(/\(([^)]+)\)$/), ty = tM ? tM[1] : "", sub = lP.replace(` (${ty})`, "").trim(), lPS = rP.lastIndexOf(" ("), tea = rP.substring(0, lPS).trim(), loc = rP.substring(lPS + 2, rP.length - 1), rM = loc.match(/Otaq (.+)$/), room = rM ? rM[1] : "";
-                const normTy = ty.toLowerCase().startsWith('lab') ? 'laboratoriya' : ty.toLowerCase();
-                document.getElementById('schedule-week-type').value = w; document.getElementById('schedule-day').value = d; document.getElementById('schedule-slot').value = s; document.getElementById('schedule-subject').value = sub; document.getElementById('schedule-type').value = normTy; document.getElementById('schedule-teacher').value = tea; document.getElementById('schedule-room').value = room;
-                const b = document.getElementById('btn-add-schedule'); b.textContent = "Dəyişikliyi Yadda Saxla"; b.classList.remove('bg-green-600', 'bg-blue-600'); b.classList.add('bg-blue-600');
-                let c = document.getElementById('btn-cancel-edit'); if (!c) { c = document.createElement('button'); c.id = 'btn-cancel-edit'; c.textContent = "Ləğv et"; c.className = "bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded transition-colors ml-2"; c.onclick = cancelEditLesson; b.parentNode.appendChild(c); } c.classList.remove('hidden');
-                document.getElementById('schedule-week-type').scrollIntoView({ behavior: 'smooth', block: 'center' });
-            } catch (e) { console.error(e); }
-        };
-        window.cancelEditLesson = () => { window.editingLesson = null; document.getElementById('schedule-teacher').value = ''; document.getElementById('schedule-room').value = ''; const b = document.getElementById('btn-add-schedule'); b.textContent = "Cədvələ Əlavə Et"; b.classList.remove('bg-blue-600'); b.classList.add('bg-green-600'); const c = document.getElementById('btn-cancel-edit'); if (c) c.classList.add('hidden'); };
-        async function loadGroupSchedule() {
+
+        document.getElementById('search-absences')?.addEventListener('input', renderAbsencesList);
+        document.getElementById('btn-refresh-absences')?.addEventListener('click', () => {
+            showToast("Qayıblar yenilənir...", "info");
+            loadAbsences();
+        });
+
+        // 2. QİYMƏTLƏR
+        async function loadGrades() {
             if (!activeSemesterId) return;
-            const s = await manager.getGroupSchedule(activeSemesterId, currentGroupId), pc = document.getElementById('preview-schedule');
-            if (!s) { pc.innerHTML = "<p>Cədvəl tapılmadı.</p>"; return; }
-            let h = '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
-            const rD = (w, dN, dC, l) => {
-                if (!l || l.length === 0) return '';
-                return `<div class="bg-gray-700 p-2 rounded mb-2"><div class="font-bold text-yellow-400 border-b border-gray-600 mb-1">${w.toUpperCase()} - ${dN}</div>${l.sort().map((ls, i) => {
-                    let d = ls; if (ls.startsWith('{')) d = ls.substring(ls.indexOf('}') + 1).trim();
-                    let sn = ls.startsWith('{') ? parseInt(ls.substring(1, ls.indexOf('}'))) : null;
-                    const mn = (sn && sn > 3) ? (sn - 3) : (sn || i + 1), sl = ls.replace(/'/g, "\\'");
-                    return `<div class="flex justify-between items-start text-sm bg-gray-800 p-1 rounded mb-1 border border-gray-700"><span><span class="font-bold text-gray-500 mr-2">${mn})</span>${d}</span><div><button onclick="window.startEditLesson('${w}', '${dC}', '${sl}')" class="text-blue-400 hover:text-white px-1 ml-2"><i class="ph ph-pencil-simple"></i></button><button onclick="deleteLesson('${w}', '${dC}', '${sl}')" class="text-red-500 hover:text-white px-1 ml-2"><i class="ph ph-trash"></i></button></div></div>`;
-                }).join('')}</div>`;
-            };
-            const da = { "1": "Bazar ertəsi", "2": "Çərşənbə axşamı", "3": "Çərşənbə", "4": "Cümə axşamı", "5": "Cümə" };
-            h += '<div class="border border-gray-600 p-2 rounded"><h3 class="text-center font-bold text-blue-300 mb-2">Alt Həftə</h3>'; for (let k in da) h += rD('alt', da[k], k, s.alt?.[k]); h += '</div>';
-            h += '<div class="border border-gray-600 p-2 rounded"><h3 class="text-center font-bold text-green-300 mb-2">Üst Həftə</h3>'; for (let k in da) h += rD('ust', da[k], k, s.ust?.[k]); h += '</div></div>';
-            pc.innerHTML = h;
-        }
-        window.deleteLesson = async (w, d, l) => { if (confirm("Silinsin?")) try { await manager.deleteLessonFromSchedule(activeSemesterId, currentGroupId, w, d, l); loadGroupSchedule(); } catch (e) { alert(e.message); } };
-        document.getElementById('btn-add-absence').onclick = async () => { const st = studentSelect.value, sb = subjectSelectAbsence.value, dt = document.getElementById('date-input').value; if (!st || !sb || !dt) return alert("Doldurun!"); await manager.addAbsence(activeSemesterId, currentGroupId, st, sb, dt); alert("Yazıldı!"); await loadAllLogs(); };
-        document.getElementById('btn-add-grade').onclick = async () => { const st = studentSelectGrade.value, sb = subjectSelectGrade.value, gr = document.getElementById('grade-input').value; if (!st || !sb || !gr) return alert("Doldurun!"); await manager.addGrade(activeSemesterId, currentGroupId, st, sb, gr); alert("Qiymət yazıldı!"); document.getElementById('grade-input').value = ''; await loadAllLogs(); };
-        async function deleteAbsence(id) { if (confirm("Silinsin?")) { await manager.deleteAbsenceLog(id); await loadAllLogs(); } }
-        async function deleteGrade(id) { if (confirm("Qiymət silinsin?")) { await manager.deleteGrade(id); await loadAllLogs(); } }
-        document.getElementById('btn-migrate-students').onclick = async () => { if (confirm("Miqrasiya?")) { await manager.migrateStudents(staticStudents, currentGroupId); alert("Hazır!"); await loadStudents(); } };
-        document.getElementById('btn-migrate-absences').onclick = async () => { if (confirm("Qayıblar bərpa edilsin?")) { const c = await manager.migrateOldAbsences(); alert(`${c} qayıb bərpa edildi.`); } };
-        document.querySelectorAll('.tab-btn').forEach(b => { b.addEventListener('click', () => { document.querySelectorAll('.tab-btn').forEach(x => x.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active')); b.classList.add('active'); document.getElementById(b.dataset.tab).classList.add('active'); }); });
+            try {
+                const q = query(collection(db, "grades_log"), where("semesterId", "==", activeSemesterId), limit(200));
+                const snap = await getDocs(q);
+                const docs = [];
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    if ((!d.groupId || d.groupId === currentGroupId) && validStudents.has(d.studentName)) {
+                        docs.push({ id: doc.id, ...d });
+                    }
+                });
 
-        // === COLLOQUIUM HANDLER ===
+                docs.sort((a, b) => getTimestampMillis(b.timestamp) - getTimestampMillis(a.timestamp));
+                cachedGrades = docs;
+                renderGradesList();
+            } catch (e) {
+                console.warn("Grades load warning:", e.message);
+                gradesList.innerHTML = `<p class="text-red-400 text-xs py-2">Xəta: ${e.message}</p>`;
+            }
+        }
+
+        function renderGradesList() {
+            const queryText = (document.getElementById('search-grades')?.value || '').toLowerCase().trim();
+            const filtered = cachedGrades.filter(d =>
+                !queryText ||
+                (d.studentName && d.studentName.toLowerCase().includes(queryText)) ||
+                (d.subject && d.subject.toLowerCase().includes(queryText))
+            );
+
+            const badge = document.getElementById('grades-count-badge');
+            if (badge) badge.textContent = filtered.length;
+
+            if (filtered.length === 0) {
+                gradesList.innerHTML = `<p class="text-gray-500 text-sm py-4 text-center">${queryText ? 'Uyğun qiymət tapılmadı.' : 'Bu semestr üçün qiymət yoxdur.'}</p>`;
+                return;
+            }
+
+            gradesList.innerHTML = filtered.map(data => `
+                <div class="flex justify-between items-center bg-gray-900/90 p-3 rounded-xl border border-gray-700/80 hover:border-gray-600 transition">
+                    <div class="min-w-0 flex-1 mr-2">
+                        <p class="font-bold text-gray-200 text-sm truncate">${data.studentName}</p>
+                        <p class="text-xs text-gray-400 truncate">${data.subject} &bull; Qiymət: <strong class="text-blue-400 font-mono">${data.grade}</strong></p>
+                    </div>
+                    <button onclick="window.deleteGradeItem('${data.id}')"
+                        class="text-red-400 hover:text-white hover:bg-red-600/30 p-1.5 rounded-lg transition" title="Sil">
+                        <i class="ph ph-trash text-base"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        window.deleteGradeItem = async (id) => {
+            if (!confirm("Bu qiymət silinsin?")) return;
+            try {
+                await manager.deleteGrade(id);
+                showToast("Qiymət silindi!");
+                await loadGrades();
+            } catch (e) {
+                showToast("Xəta: " + e.message, "error");
+            }
+        };
+
+        document.getElementById('search-grades')?.addEventListener('input', renderGradesList);
+        document.getElementById('btn-refresh-grades')?.addEventListener('click', () => {
+            showToast("Qiymətlər yenilənir...", "info");
+            loadGrades();
+        });
+
+        // 3. KOLLEKVİUMLAR
+        async function loadColloquiums() {
+            if (!activeSemesterId) return;
+            try {
+                const q = query(collection(db, "colloquium_log"), where("semesterId", "==", activeSemesterId), limit(200));
+                const snap = await getDocs(q);
+                const docs = [];
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    if ((!d.groupId || d.groupId === currentGroupId) && validStudents.has(d.studentName)) {
+                        docs.push({ id: doc.id, ...d });
+                    }
+                });
+
+                docs.sort((a, b) => getTimestampMillis(b.timestamp) - getTimestampMillis(a.timestamp));
+                cachedColloquiums = docs;
+                renderColloquiumsList();
+            } catch (e) {
+                console.warn("Colloquiums load warning:", e.message);
+                const collList = document.getElementById('colloquiums-list');
+                if (collList) collList.innerHTML = `<p class="text-red-400 text-xs py-2">Xəta: ${e.message}</p>`;
+            }
+        }
+
+        function renderColloquiumsList() {
+            const collList = document.getElementById('colloquiums-list');
+            if (!collList) return;
+
+            const queryText = (document.getElementById('search-colloquiums')?.value || '').toLowerCase().trim();
+            const filtered = cachedColloquiums.filter(d =>
+                !queryText ||
+                (d.studentName && d.studentName.toLowerCase().includes(queryText)) ||
+                (d.subject && d.subject.toLowerCase().includes(queryText))
+            );
+
+            const badge = document.getElementById('colloquiums-count-badge');
+            if (badge) badge.textContent = filtered.length;
+
+            if (filtered.length === 0) {
+                collList.innerHTML = `<p class="text-gray-500 text-sm py-4 text-center">${queryText ? 'Uyğun kollekvium tapılmadı.' : 'Bu semestr üçün kollekvium yoxdur.'}</p>`;
+                return;
+            }
+
+            collList.innerHTML = filtered.map(data => `
+                <div class="flex justify-between items-center bg-gray-900/90 p-3 rounded-xl border border-gray-700/80 hover:border-gray-600 transition">
+                    <div class="min-w-0 flex-1 mr-2">
+                        <p class="font-bold text-gray-200 text-sm truncate">${data.studentName}</p>
+                        <p class="text-xs text-gray-400 truncate">${data.subject} &bull; Kollekvium: <strong class="text-teal-400 font-mono">${data.score}</strong></p>
+                    </div>
+                    <button onclick="window.deleteColloquiumItem('${data.id}')"
+                        class="text-red-400 hover:text-white hover:bg-red-600/30 p-1.5 rounded-lg transition" title="Sil">
+                        <i class="ph ph-trash text-base"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        window.deleteColloquiumItem = async (id) => {
+            if (!confirm("Bu kollekvium balı silinsin?")) return;
+            try {
+                await manager.deleteColloquium(id);
+                showToast("Kollekvium balı silindi!");
+                await loadColloquiums();
+            } catch (e) {
+                showToast("Xəta: " + e.message, "error");
+            }
+        };
+
+        document.getElementById('search-colloquiums')?.addEventListener('input', renderColloquiumsList);
+        document.getElementById('btn-refresh-colloquiums')?.addEventListener('click', () => {
+            showToast("Kollekviumlar yenilənir...", "info");
+            loadColloquiums();
+        });
+
+        // Helper to load all 3 logs in parallel
+        async function loadAllLogs() {
+            await Promise.all([loadAbsences(), loadGrades(), loadColloquiums()]);
+        }
+
+        // --- ADD ACTIONS WITH PREVENT DOUBLE-SUBMIT ---
+        document.getElementById('btn-add-absence').onclick = async () => {
+            const st = studentSelect.value;
+            const sb = subjectSelectAbsence.value;
+            const dt = document.getElementById('date-input').value;
+            if (!st || !sb || !dt || !activeSemesterId) return showToast("Zəhmət olmasa bütün sahələri doldurun!", "error");
+
+            const btn = document.getElementById('btn-add-absence');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="ph ph-spinner animate-spin text-lg"></i><span>Yazılır...</span>';
+
+            try {
+                await manager.addAbsence(activeSemesterId, currentGroupId, st, sb, dt);
+                showToast(`${st} üçün qayıb yazıldı!`);
+                await loadAbsences();
+            } catch (e) {
+                showToast("Xəta: " + e.message, "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="ph ph-check-circle text-lg"></i><span>Yadda Saxla</span>';
+            }
+        };
+
+        document.getElementById('btn-add-grade').onclick = async () => {
+            const st = studentSelectGrade.value;
+            const sb = subjectSelectGrade.value;
+            const grInp = document.getElementById('grade-input');
+            const gr = grInp.value.trim();
+            if (!st || !sb || !gr || !activeSemesterId) return showToast("Zəhmət olmasa bütün sahələri doldurun!", "error");
+
+            const btn = document.getElementById('btn-add-grade');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="ph ph-spinner animate-spin text-lg"></i><span>Yazılır...</span>';
+
+            try {
+                await manager.addGrade(activeSemesterId, currentGroupId, st, sb, parseFloat(gr));
+                showToast("Qiymət uğurla yazıldı!");
+                grInp.value = '';
+                await loadGrades();
+            } catch (e) {
+                showToast("Xəta: " + e.message, "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="ph ph-plus-circle text-lg"></i><span>Əlavə Et</span>';
+            }
+        };
+
         document.getElementById('btn-add-colloquium').onclick = async () => {
             const st = document.getElementById('student-select-colloquium').value;
             const sb = document.getElementById('subject-select-colloquium').value;
-            const sc = document.getElementById('colloquium-input').value;
-            if (!st || !sb || !sc) return alert('Doldurun!');
+            const scInp = document.getElementById('colloquium-input');
+            const sc = scInp.value.trim();
+            if (!st || !sb || !sc || !activeSemesterId) return showToast("Zəhmət olmasa bütün sahələri doldurun!", "error");
+
+            const btn = document.getElementById('btn-add-colloquium');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="ph ph-spinner animate-spin text-lg"></i><span>Yazılır...</span>';
+
             try {
-                await manager.addColloquium(activeSemesterId, currentGroupId, st, sb, sc);
-                alert('Kollekvium yazıldı!');
-                document.getElementById('colloquium-input').value = '';
-            } catch (e) { alert('Xəta: ' + e.message); }
+                await manager.addColloquium(activeSemesterId, currentGroupId, st, sb, parseFloat(sc));
+                showToast("Kollekvium balı yazıldı!");
+                scInp.value = '';
+                await loadColloquiums();
+            } catch (e) {
+                showToast("Xəta: " + e.message, "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="ph ph-check-circle text-lg"></i><span>Əlavə Et</span>';
+            }
         };
 
-        // === BULK ENTRY HANDLER ===
+        // --- BULK ENTRY LOGIC ---
         let bulkEntryData = [];
 
         document.getElementById('ocr-subject-select').addEventListener('change', (e) => {
             const subject = e.target.value;
+            const container = document.getElementById('bulk-entry-container');
             if (!subject) {
-                document.getElementById('bulk-entry-container').classList.add('hidden');
+                container.classList.add('hidden');
                 return;
             }
 
-            // Get student list in university official order (sıra nömrəsi)
-            const students = [...staticStudents];
-            bulkEntryData = students.map(s => ({ studentName: s, score: null }));
+            bulkEntryData = staticStudents.map(s => ({ studentName: s, score: null }));
+            const tableContainer = document.getElementById('ocr-results-table');
+            const gradeType = document.getElementById('ocr-grade-type').value;
+            const maxScore = gradeType === 'colloquium' ? 30 : 100;
 
-            // Render form
-            const container = document.getElementById('ocr-results-table');
-            container.innerHTML = bulkEntryData.map((r, i) => {
-                return `<div class="flex items-center gap-3 p-2 rounded-lg border border-gray-700 bg-gray-800">
-                    <span class="text-gray-500 text-xs w-6 text-right font-mono">${i + 1}</span>
-                    <span class="flex-grow text-sm font-medium text-gray-200 truncate">${r.studentName}</span>
-                    <input type="number" class="bulk-score-input w-20 p-2 bg-gray-700 border border-gray-600 rounded text-white text-center text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none" data-index="${i}" placeholder="-" min="0" max="30" step="0.1">
-                </div>`;
-            }).join('');
+            tableContainer.innerHTML = bulkEntryData.map((r, i) => `
+                <div class="flex items-center gap-2 sm:gap-3 p-2.5 rounded-xl border border-gray-700/80 bg-gray-900/90 hover:border-gray-600 transition">
+                    <span class="text-gray-500 text-xs w-5 sm:w-6 text-right font-mono font-bold flex-shrink-0">${i + 1}</span>
+                    <span class="flex-grow text-xs sm:text-sm font-medium text-gray-200 truncate">${r.studentName}</span>
+                    <input type="number" class="bulk-score-input w-20 sm:w-24 p-2 bg-gray-800 border border-gray-600 rounded-lg text-white text-center text-xs sm:text-sm font-bold focus:ring-2 focus:ring-purple-500 focus:outline-none flex-shrink-0"
+                        data-index="${i}" placeholder="-" min="0" max="${maxScore}" step="0.1">
+                </div>
+            `).join('');
 
-            // Auto-focus and Enter navigation
-            container.querySelectorAll('.bulk-score-input').forEach(inp => {
+            // Key navigation
+            tableContainer.querySelectorAll('.bulk-score-input').forEach(inp => {
                 inp.addEventListener('input', (ev) => {
-                    const idx = parseInt(ev.target.dataset.index);
+                    const idx = parseInt(ev.target.dataset.index, 10);
                     const val = ev.target.value.trim();
                     bulkEntryData[idx].score = val === '' ? null : Number(val);
                 });
                 inp.addEventListener('keydown', (ev) => {
                     if (ev.key === 'Enter') {
                         ev.preventDefault();
-                        const nextIdx = parseInt(ev.target.dataset.index) + 1;
-                        const nextInput = container.querySelector(`[data-index="${nextIdx}"]`);
+                        const nextIdx = parseInt(ev.target.dataset.index, 10) + 1;
+                        const nextInput = tableContainer.querySelector(`[data-index="${nextIdx}"]`);
                         if (nextInput) nextInput.focus();
                     }
                 });
             });
 
-            document.getElementById('bulk-entry-container').classList.remove('hidden');
-            // Focus first input
+            container.classList.remove('hidden');
             setTimeout(() => {
-                const firstInput = container.querySelector('.bulk-score-input');
+                const firstInput = tableContainer.querySelector('.bulk-score-input');
                 if (firstInput) firstInput.focus();
-            }, 300);
+            }, 150);
+        });
+
+        document.getElementById('btn-clear-bulk')?.addEventListener('click', () => {
+            const tableContainer = document.getElementById('ocr-results-table');
+            tableContainer.querySelectorAll('.bulk-score-input').forEach(inp => inp.value = '');
+            bulkEntryData.forEach(r => r.score = null);
         });
 
         document.getElementById('btn-ocr-save').onclick = async () => {
             const subject = document.getElementById('ocr-subject-select').value;
             const gradeType = document.getElementById('ocr-grade-type').value;
-            if (!subject) return alert('Fənn seçilməyib!');
+            if (!subject) return showToast('Fənn seçilməyib!', 'error');
 
-            const entries = bulkEntryData.filter(r => r.score !== null && r.score !== undefined);
-            if (entries.length === 0) return alert('Heç bir bal daxil edilməyib!');
-            if (!confirm(`${entries.length} tələbə üçün ${gradeType === 'colloquium' ? 'kollekvium' : 'qiymət'} yazılsın?`)) return;
+            const entries = bulkEntryData.filter(r => r.score !== null && r.score !== undefined && !isNaN(r.score));
+            if (entries.length === 0) return showToast('Heç bir bal daxil edilməyib!', 'error');
+
+            const typeLabel = gradeType === 'colloquium' ? 'kollekvium' : 'gündəlik qiymət';
+            if (!confirm(`${entries.length} tələbə üçün ${typeLabel} qeyd edilsin?`)) return;
 
             const btn = document.getElementById('btn-ocr-save');
             btn.disabled = true;
-            btn.textContent = 'Yazılır...';
+            btn.innerHTML = '<i class="ph ph-spinner animate-spin text-lg"></i><span>Yazılır...</span>';
+
             try {
                 const count = await manager.bulkAddGrades(activeSemesterId, currentGroupId, subject, gradeType, entries);
-                alert(`${count} bal uğurla yazıldı!`);
+                showToast(`${count} tələbə üçün qiymət yazıldı!`);
+
                 document.getElementById('bulk-entry-container').classList.add('hidden');
-                document.getElementById('ocr-file-input').value = '';
+                document.getElementById('ocr-subject-select').value = '';
                 bulkEntryData = [];
+
+                if (gradeType === 'colloquium') await loadColloquiums();
+                else await loadGrades();
             } catch (e) {
-                alert('Xəta: ' + e.message);
+                showToast('Xəta: ' + e.message, 'error');
             } finally {
                 btn.disabled = false;
-                btn.textContent = 'Hamısını Yadda Saxla';
+                btn.innerHTML = '<i class="ph ph-floppy-disk text-lg"></i><span>Hamısını Yadda Saxla</span>';
             }
         };
+
+        // --- SCHEDULE MANAGEMENT ---
+        const slotTimes = {
+            "1": "08:00-09:20",
+            "2": "09:35-10:55",
+            "3": "11:10-12:30",
+            "4": "12:45-14:05",
+            "5": "14:20-15:40",
+            "6": "15:55-17:15"
+        };
+
+        window.editingLesson = null;
+
+        document.getElementById('btn-add-schedule').onclick = async () => {
+            const wt = document.getElementById('schedule-week-type').value;
+            const d = document.getElementById('schedule-day').value;
+            const sl = document.getElementById('schedule-slot').value;
+            const sub = document.getElementById('schedule-subject').value;
+            const ty = document.getElementById('schedule-type').value;
+            const t = document.getElementById('schedule-teacher').value.trim();
+            let r = document.getElementById('schedule-room').value.trim();
+
+            if (!sub || !t || !r || !activeSemesterId) {
+                return showToast("Zəhmət olmasa bütün sahələri doldurun!", "error");
+            }
+
+            // Clean up room: remove extra "Otaq" prefix if typed by user
+            r = r.replace(/^otaq\s*/i, '').trim();
+
+            const timeStr = slotTimes[sl] || "";
+            const lStr = `{${sl}} ${sub} (${ty}) - ${t} (${timeStr}, Otaq ${r})`;
+
+            const btn = document.getElementById('btn-add-schedule');
+            btn.disabled = true;
+
+            try {
+                if (window.editingLesson) {
+                    await manager.updateLessonInSchedule(
+                        activeSemesterId,
+                        currentGroupId,
+                        window.editingLesson.week,
+                        window.editingLesson.day,
+                        window.editingLesson.originalString,
+                        lStr
+                    );
+                    showToast("Dərs uğurla dəyişdirildi!");
+                    cancelEditLesson();
+                } else {
+                    if (wt === 'both') {
+                        await manager.addLessonToSchedule(activeSemesterId, currentGroupId, 'alt', d, lStr);
+                        await manager.addLessonToSchedule(activeSemesterId, currentGroupId, 'ust', d, lStr);
+                    } else {
+                        await manager.addLessonToSchedule(activeSemesterId, currentGroupId, wt, d, lStr);
+                    }
+                    showToast("Dərs cədvələ əlavə edildi!");
+                    document.getElementById('schedule-teacher').value = '';
+                    document.getElementById('schedule-room').value = '';
+                }
+                await loadGroupSchedule();
+            } catch (e) {
+                showToast("Xəta: " + e.message, "error");
+            } finally {
+                btn.disabled = false;
+            }
+        };
+
+        // Robust lesson parser for edit mode
+        window.startEditLessonByKey = (key) => {
+            const data = window.lessonStore[key];
+            if (!data) return;
+
+            const { week: w, day: d, originalString: ls } = data;
+            window.editingLesson = { week: w, day: d, originalString: ls };
+
+            try {
+                let slot = "1";
+                let rem = ls;
+
+                if (rem.startsWith('{')) {
+                    const e = rem.indexOf('}');
+                    slot = rem.substring(1, e);
+                    rem = rem.substring(e + 1).trim();
+                }
+
+                let subject = "";
+                let type = "mühazirə";
+                let teacher = "";
+                let room = "";
+
+                if (rem.includes(' - ')) {
+                    const parts = rem.split(' - ');
+                    const leftPart = parts[0].trim();
+                    const rightPart = parts.slice(1).join(' - ').trim();
+
+                    // Left part: Subject (Type)
+                    const typeMatch = leftPart.match(/\(([^)]+)\)$/);
+                    if (typeMatch) {
+                        type = typeMatch[1].trim().toLowerCase();
+                        if (type.startsWith('lab')) type = 'laboratoriya';
+                        subject = leftPart.replace(`(${typeMatch[1]})`, '').trim();
+                    } else {
+                        subject = leftPart;
+                    }
+
+                    // Right part: Teacher (Time, Otaq Room)
+                    const parenMatch = rightPart.match(/^(.*?)(?:\s*\((.*)\))?$/);
+                    if (parenMatch) {
+                        teacher = parenMatch[1].trim();
+                        if (parenMatch[2]) {
+                            const inside = parenMatch[2].trim();
+                            const roomMatch = inside.match(/Otaq (.+)$/i);
+                            if (roomMatch) room = roomMatch[1].trim();
+                        }
+                    }
+                } else {
+                    subject = rem;
+                }
+
+                document.getElementById('schedule-week-type').value = w;
+                document.getElementById('schedule-day').value = d;
+                document.getElementById('schedule-slot').value = slot;
+                document.getElementById('schedule-subject').value = subject;
+                document.getElementById('schedule-type').value = type;
+                document.getElementById('schedule-teacher').value = teacher;
+                document.getElementById('schedule-room').value = room;
+
+                const b = document.getElementById('btn-add-schedule');
+                b.innerHTML = '<i class="ph ph-floppy-disk text-lg"></i><span>Dəyişikliyi Yadda Saxla</span>';
+                b.classList.remove('bg-blue-600');
+                b.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
+
+                const c = document.getElementById('btn-cancel-edit');
+                if (c) c.classList.remove('hidden');
+
+                document.getElementById('schedule-form-title').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } catch (e) {
+                console.error("Lesson edit parsing error:", e);
+                showToast("Dərsi açmaq mümkün olmadı: " + e.message, "error");
+            }
+        };
+
+        window.cancelEditLesson = () => {
+            window.editingLesson = null;
+            document.getElementById('schedule-teacher').value = '';
+            document.getElementById('schedule-room').value = '';
+
+            const b = document.getElementById('btn-add-schedule');
+            b.innerHTML = '<i class="ph ph-plus-circle text-lg"></i><span>Cədvələ Əlavə Et</span>';
+            b.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
+            b.classList.add('bg-blue-600');
+
+            const c = document.getElementById('btn-cancel-edit');
+            if (c) c.classList.add('hidden');
+        };
+
+        document.getElementById('btn-cancel-edit').onclick = window.cancelEditLesson;
+
+        window.deleteLessonByKey = async (key) => {
+            const data = window.lessonStore[key];
+            if (!data) return;
+            if (!confirm("Bu dərsi cədvəldən silmək istəyirsiniz?")) return;
+
+            try {
+                await manager.deleteLessonFromSchedule(activeSemesterId, currentGroupId, data.week, data.day, data.originalString);
+                showToast("Dərs cədvəldən silindi!");
+                await loadGroupSchedule();
+            } catch (e) {
+                showToast("Xəta: " + e.message, "error");
+            }
+        };
+
+        async function loadGroupSchedule() {
+            if (!activeSemesterId) return;
+            const pc = document.getElementById('preview-schedule');
+            try {
+                const s = await manager.getGroupSchedule(activeSemesterId, currentGroupId);
+                if (!s) {
+                    pc.innerHTML = "<p class='text-gray-500 text-sm py-4'>Cədvəl tapılmadı.</p>";
+                    return;
+                }
+
+                const da = { "1": "Bazar ertəsi", "2": "Çərşənbə axşamı", "3": "Çərşənbə", "4": "Cümə axşamı", "5": "Cümə" };
+
+                const renderDay = (w, dN, dC, list) => {
+                    if (!list || list.length === 0) return '';
+                    return `
+                    <div class="bg-gray-850 bg-gray-900/80 p-3 rounded-xl mb-3 border border-gray-700/80">
+                        <div class="font-bold text-xs uppercase tracking-wider ${w === 'alt' ? 'text-yellow-400' : 'text-green-400'} border-b border-gray-700 pb-1.5 mb-2">
+                            ${w.toUpperCase()} &bull; ${dN}
+                        </div>
+                        <div class="space-y-1.5">
+                            ${list.sort().map((ls, i) => {
+                                let d = ls;
+                                let sn = null;
+                                if (ls.startsWith('{')) {
+                                    const e = ls.indexOf('}');
+                                    sn = parseInt(ls.substring(1, e), 10);
+                                    d = ls.substring(e + 1).trim();
+                                }
+                                const mn = (sn && sn > 3) ? (sn - 3) : (sn || i + 1);
+
+                                const storeKey = `les_${w}_${dC}_${i}_${Math.random().toString(36).substring(2, 7)}`;
+                                window.lessonStore[storeKey] = { week: w, day: dC, originalString: ls };
+
+                                let mainTitle = d;
+                                let subDetail = "";
+                                if (d.includes(' - ')) {
+                                    const parts = d.split(' - ');
+                                    mainTitle = parts[0].trim();
+                                    subDetail = parts.slice(1).join(' - ').trim();
+                                }
+
+                                return `
+                                <div class="flex items-start justify-between gap-2 text-xs bg-gray-800 p-2.5 rounded-xl border border-gray-700/70 hover:border-gray-600 transition">
+                                    <div class="flex items-start gap-2 min-w-0 flex-1">
+                                        <span class="w-5 h-5 mt-0.5 rounded-md bg-blue-500/20 text-blue-400 font-extrabold flex items-center justify-center text-[10px] flex-shrink-0">${mn}</span>
+                                        <div class="min-w-0 flex-1">
+                                            <p class="font-bold text-gray-100 text-xs sm:text-sm leading-snug break-words">${mainTitle}</p>
+                                            ${subDetail ? `<p class="text-[11px] text-gray-400 mt-0.5 leading-tight break-words">${subDetail}</p>` : ''}
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-1 flex-shrink-0 pt-0.5">
+                                        <button onclick="window.startEditLessonByKey('${storeKey}')" class="text-blue-400 hover:text-white p-1 rounded hover:bg-blue-600/30 transition" title="Dəyiş">
+                                            <i class="ph ph-pencil-simple text-sm"></i>
+                                        </button>
+                                        <button onclick="window.deleteLessonByKey('${storeKey}')" class="text-red-400 hover:text-white p-1 rounded hover:bg-red-600/30 transition" title="Sil">
+                                            <i class="ph ph-trash text-sm"></i>
+                                        </button>
+                                    </div>
+                                </div>`;
+                            }).join('')}
+                        </div>
+                    </div>`;
+                };
+
+                let h = '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
+                h += '<div class="border border-blue-500/30 bg-blue-950/10 p-4 rounded-2xl"><h4 class="text-center font-bold text-blue-400 mb-3 text-sm flex items-center justify-center gap-1.5"><i class="ph ph-arrow-circle-down"></i><span>ALT HƏFTƏ</span></h4>';
+                for (let k in da) h += renderDay('alt', da[k], k, s.alt?.[k]);
+                h += '</div>';
+
+                h += '<div class="border border-emerald-500/30 bg-emerald-950/10 p-4 rounded-2xl"><h4 class="text-center font-bold text-emerald-400 mb-3 text-sm flex items-center justify-center gap-1.5"><i class="ph ph-arrow-circle-up"></i><span>ÜST HƏFTƏ</span></h4>';
+                for (let k in da) h += renderDay('ust', da[k], k, s.ust?.[k]);
+                h += '</div></div>';
+
+                pc.innerHTML = h;
+            } catch (e) {
+                console.error("Schedule load error:", e);
+                pc.innerHTML = `<p class="text-red-400 text-sm py-2">Xəta: ${e.message}</p>`;
+            }
+        }
+
+        document.getElementById('btn-refresh-schedule')?.addEventListener('click', () => {
+            showToast("Cədvəl yenilənir...", "info");
+            loadGroupSchedule();
+        });
+
+        // --- SEMESTER & MIGRATION ACTIONS ---
+        document.getElementById('btn-create-semester').onclick = async () => {
+            const n = document.getElementById('new-semester-name').value.trim();
+            if (!n) return showToast("Semestrin adını daxil edin!", "error");
+            if (!confirm(`"${n}" adlı yeni semestr yaradılsın? Cari semestr arxivlənəcək!`)) return;
+
+            const btn = document.getElementById('btn-create-semester');
+            btn.disabled = true;
+            try {
+                await manager.createSemester(n);
+                showToast("Yeni semestr aktivləşdirildi!");
+                setTimeout(() => window.location.reload(), 800);
+            } catch (e) {
+                showToast("Xəta: " + e.message, "error");
+                btn.disabled = false;
+            }
+        };
+
+        document.getElementById('btn-migrate-students').onclick = async () => {
+            if (!confirm("23 tələbə bazaya köçürülsün?")) return;
+            const btn = document.getElementById('btn-migrate-students');
+            btn.disabled = true;
+            try {
+                await manager.migrateStudents(staticStudents, currentGroupId);
+                showToast("Tələbələr uğurla köçürüldü!");
+                await loadStudents();
+            } catch (e) {
+                showToast("Xəta: " + e.message, "error");
+            } finally {
+                btn.disabled = false;
+            }
+        };
+
+        document.getElementById('btn-migrate-absences').onclick = async () => {
+            if (!confirm("Köhnə qayıblar bərpa edilsin?")) return;
+            const btn = document.getElementById('btn-migrate-absences');
+            btn.disabled = true;
+            try {
+                const c = await manager.migrateOldAbsences();
+                showToast(`${c} qayıb bərpa edildi!`);
+                await loadAbsences();
+            } catch (e) {
+                showToast("Xəta: " + e.message, "error");
+            } finally {
+                btn.disabled = false;
+            }
+        };
+
+        // --- TAB SWITCHING ---
+        document.querySelectorAll('.tab-btn').forEach(b => {
+            b.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(x => x.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
+                b.classList.add('active');
+                const target = document.getElementById(b.dataset.tab);
+                if (target) target.classList.add('active');
+            });
+        });
     </script>
 </body>
 
